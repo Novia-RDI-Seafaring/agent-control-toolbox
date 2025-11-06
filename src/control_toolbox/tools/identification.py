@@ -53,7 +53,6 @@ def identify_fopdt_from_step(data: DataModel, props: IdentificationProps) -> Res
     y_0 = y[0]
     y_step = y_inf - y_0 # step change of y
     
-
     if props.method == "tangent":
 
         # find inflection point
@@ -64,12 +63,15 @@ def identify_fopdt_from_step(data: DataModel, props: IdentificationProps) -> Res
         T = t_i + (y_inf - y_i) / slope - t_step - L if slope != 0 else float("inf") # point where reaches the steady statevalue -> tiem constant T
         K = y_step / u_step if u_step != 0 else 0.0
 
-        model = FOPDTModel(
-            K=K,
-            L=L,
-            T=T,
-            description=f"FOPDT model identified from step response"
-            )
+    else:
+        raise ValueError(f"Method '{props.method}' not supported")
+
+    model = FOPDTModel(
+        K=K,
+        L=L,
+        T=T,
+        description=f"FOPDT model identified from step response"
+        )
 
     return ResponseModel(
         source=Source(tool_name="identify_fopdt_tool"),
