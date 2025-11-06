@@ -96,6 +96,14 @@ class PeakAttributes(BaseModel):
     average_peak_period: float = Field(..., description="Average period of the peaks")
     properties: Dict[str, float] = Field(..., description="Properties of the peaks")
 
+
+class FirstCrossingProps(BaseModel):
+    signal_name: str = Field(..., description="Name of the signal.")
+    threshold: float = Field(..., description="Threshold to detect.")
+    start_index: int = Field(default=0, description="Index to start the search from.")
+    is_upward: bool = Field(default=True, description="True for upward crossing (>=), False for downward crossing (<=).")
+
+
 ########################################################
 # HELPER FUNCTIONS
 ########################################################
@@ -165,12 +173,6 @@ def _first_cross(
 # TOOLS FUNCTIONS
 ########################################################
 
-class FirstCrossingProps(BaseModel):
-    signal_name: str = Field(..., description="Name of the signal.")
-    threshold: float = Field(..., description="Threshold to detect.")
-    start_index: int = Field(default=0, description="Index to start the search from.")
-    is_upward: bool = Field(default=True, description="True for upward crossing (>=), False for downward crossing (<=).")
-
 def get_first_crossing(data: DataModel, props: FirstCrossingProps) -> ResponseModel:
     """
     Finds the first crossing of a threshold in a signal.
@@ -201,6 +203,43 @@ def get_first_crossing(data: DataModel, props: FirstCrossingProps) -> ResponseMo
         ]
     )
 
+class InflectionPointProps(BaseModel):
+    signal_name: str = Field(..., description="Name of the signal.")
+
+def get_inflection_point(data: DataModel, props: InflectionPointProps) -> ResponseModel:
+    """
+    Finds the inflection point of a signal.
+    """
+    points = []
+
+    signal_found = False
+    for s in data.signals:
+        if s.name == props.signal_name:
+            signal_found = True
+            x = np.asarray(s.values, dtype=float)
+            dx = np.diff(x)
+            inflection_idx = np.argmax(dx)
+            points.append(
+                Point(
+                    timestamp=data.timestamps[inflection_idx],
+                    value=s.values[inflection_idx],
+                    description=f"Inflection point of signal {s.name}")
+                    )
+            break
+    
+    if not signal_found:
+        raise ValueError(f"Signal '{props.signal_name}' not found in data")
+    
+    return ResponseModel(
+        source=Source(tool_name="get_inflection_point_tool"),
+        attributes=[
+            AttributesGroup(
+                title="Inflection point results",
+                attributes=points,
+                description="Returns the infleciton point of a signal. For a smooth monotonic curve, the inflection point is where the slope (rate of change) is the highest.")
+        ]
+    )
+    
 def find_characteristic_points(data: DataModel) -> ResponseModel:
     """
     Finds the characteristic points of step responses.
@@ -375,6 +414,6 @@ def find_settling_time(data: DataModel, props: SettlingTimeProps) -> ResponseMod
             )
         ]
     )
-        
+
 
 

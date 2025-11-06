@@ -13,7 +13,9 @@ from control_toolbox.tools.analysis import (
     SettlingTimeProps,
     find_settling_time,
     FirstCrossingProps,
-    get_first_crossing
+    get_first_crossing,
+    InflectionPointProps,
+    get_inflection_point
     )
 
 ########################################################
@@ -130,5 +132,12 @@ first_crossing = get_first_crossing(step_response.data, props=first_crossing_pro
 print(80*"=")
 print("First Crossing:")
 print(first_crossing.model_dump_json(indent=2))
+print(80*"=")
+
+inflection_point_props = InflectionPointProps(signal_name="y")
+inflection_point = get_inflection_point(step_response.data, props=inflection_point_props)
+print(80*"=")
+print("Inflection Point:")
+print(inflection_point.model_dump_json(indent=2))
 print(80*"=")
 
