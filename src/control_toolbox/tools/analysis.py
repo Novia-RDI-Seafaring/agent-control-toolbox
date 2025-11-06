@@ -103,6 +103,15 @@ class FirstCrossingProps(BaseModel):
     start_index: int = Field(default=0, description="Index to start the search from.")
     is_upward: bool = Field(default=True, description="True for upward crossing (>=), False for downward crossing (<=).")
 
+class InflectionPoint(BaseModel):
+    signal_name: str = Field(..., description="Name of the signal.")
+    timestamp: float = Field(..., description="Timestamp of the inflection point.")
+    value: float = Field(..., description="Value of the inflection point.")
+    slope: float = Field(..., description="Slope of the inflection point.")
+    description: str = Field(..., description="Description of the inflection point.")
+    
+class InflectionPointProps(BaseModel):
+    signal_name: str = Field(..., description="Name of the signal.")
 
 ########################################################
 # HELPER FUNCTIONS
@@ -203,9 +212,6 @@ def find_first_crossing(data: DataModel, props: FirstCrossingProps) -> ResponseM
         ]
     )
 
-class InflectionPointProps(BaseModel):
-    signal_name: str = Field(..., description="Name of the signal.")
-
 def find_inflection_point(data: DataModel, props: InflectionPointProps) -> ResponseModel:
     """
     Finds the inflection point of a signal.
@@ -217,12 +223,14 @@ def find_inflection_point(data: DataModel, props: InflectionPointProps) -> Respo
         if s.name == props.signal_name:
             signal_found = True
             x = np.asarray(s.values, dtype=float)
-            dx = np.diff(x)
-            inflection_idx = np.argmax(dx)
+            dxdt = np.diff(x)/np.diff(data.timestamps)
+            inflection_idx = np.argmax(dxdt)
             points.append(
-                Point(
+                InflectionPoint(
+                    signal_name=s.name,
                     timestamp=data.timestamps[inflection_idx],
                     value=s.values[inflection_idx],
+                    slope=dxdt[inflection_idx],
                     description=f"Inflection point of signal {s.name}")
                     )
             break
