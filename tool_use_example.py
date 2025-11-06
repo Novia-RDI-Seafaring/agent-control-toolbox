@@ -17,6 +17,10 @@ from control_toolbox.tools.analysis import (
     InflectionPointProps,
     find_inflection_point
     )
+from control_toolbox.tools.identification import (
+    identify_fopdt_from_step,
+    IdentificationProps
+    )
 
 ########################################################
 # INFORMATION TOOLS
@@ -141,3 +145,17 @@ print("Inflection Point:")
 print(inflection_point.model_dump_json(indent=2))
 print(80*"=")
 
+########################################################
+# SYSTEM IDENTIFICATION TOOLS
+########################################################
+identification_props = IdentificationProps(
+    input_name="u",
+    output_name="y",
+    method="tangent",
+    model="fopdt",
+)
+identification = identify_fopdt_from_step(step_response.data, props=identification_props)
+print(80*"=")
+print("Identification:")
+print(identification.model_dump_json(indent=2))
+print(80*"=")

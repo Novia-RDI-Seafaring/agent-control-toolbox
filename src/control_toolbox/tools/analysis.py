@@ -179,6 +179,15 @@ def _first_cross(
         return float("nan"), float("nan")
 
 ########################################################
+# HELPER FUNCTIONS
+########################################################
+
+def _get_inflection_point(t, x):
+    dxdt = np.diff(x)/np.diff(t)
+    inflection_idx = np.argmax(dxdt)
+    return t[inflection_idx], x[inflection_idx], dxdt[inflection_idx]
+
+########################################################
 # TOOLS FUNCTIONS
 ########################################################
 
@@ -222,15 +231,13 @@ def find_inflection_point(data: DataModel, props: InflectionPointProps) -> Respo
     for s in data.signals:
         if s.name == props.signal_name:
             signal_found = True
-            x = np.asarray(s.values, dtype=float)
-            dxdt = np.diff(x)/np.diff(data.timestamps)
-            inflection_idx = np.argmax(dxdt)
+            t_i, x_i, dxdt_i = _get_inflection_point(data.timestamps, s.values)
             points.append(
                 InflectionPoint(
                     signal_name=s.name,
-                    timestamp=data.timestamps[inflection_idx],
-                    value=s.values[inflection_idx],
-                    slope=dxdt[inflection_idx],
+                    timestamp=t_i,
+                    value=x_i,
+                    slope=dxdt_i,
                     description=f"Inflection point of signal {s.name}")
                     )
             break
