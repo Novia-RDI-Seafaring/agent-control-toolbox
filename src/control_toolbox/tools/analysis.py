@@ -173,7 +173,7 @@ def _first_cross(
 # TOOLS FUNCTIONS
 ########################################################
 
-def get_first_crossing(data: DataModel, props: FirstCrossingProps) -> ResponseModel:
+def find_first_crossing(data: DataModel, props: FirstCrossingProps) -> ResponseModel:
     """
     Finds the first crossing of a threshold in a signal.
     """
@@ -206,7 +206,7 @@ def get_first_crossing(data: DataModel, props: FirstCrossingProps) -> ResponseMo
 class InflectionPointProps(BaseModel):
     signal_name: str = Field(..., description="Name of the signal.")
 
-def get_inflection_point(data: DataModel, props: InflectionPointProps) -> ResponseModel:
+def find_inflection_point(data: DataModel, props: InflectionPointProps) -> ResponseModel:
     """
     Finds the inflection point of a signal.
     """
@@ -236,8 +236,13 @@ def get_inflection_point(data: DataModel, props: InflectionPointProps) -> Respon
             AttributesGroup(
                 title="Inflection point results",
                 attributes=points,
-                description="Returns the infleciton point of a signal. For a smooth monotonic curve, the inflection point is where the slope (rate of change) is the highest.")
-        ]
+                description=(
+                    "Returns the inflection point of a signal. In monotonic response curves "
+                    "like typical step responses, the inflection point is the location of "
+                    "maximum slope — where the rate of change is highest."
+                ),
+            )
+        ],
     )
     
 def find_characteristic_points(data: DataModel) -> ResponseModel:
