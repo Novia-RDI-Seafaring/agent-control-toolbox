@@ -1,6 +1,6 @@
 from control_toolbox.tools.information import get_fmu_names, get_model_description, get_all_model_descriptions
 from control_toolbox.tools.simulation import simulate, simulate_step_response, simulate_impulse_response, SimulationProps
-from control_toolbox.tools.timeseries import (
+from control_toolbox.tools.signals import (
     generate_step,
     StepProps, TimeRange,
     generate_impulse,
@@ -11,7 +11,9 @@ from control_toolbox.tools.analysis import (
     find_peaks,
     FindPeaksProps,
     SettlingTimeProps,
-    find_settling_time
+    find_settling_time,
+    FirstCrossingProps,
+    get_first_crossing
     )
 
 ########################################################
@@ -75,7 +77,7 @@ simulation_props = SimulationProps(
         stop_time=30.0,
         output_interval=0.1,
         start_values={
-            "mode": True,
+            "mode": False,
             "Kp": 1.0,
             "Ti": 1.0,
         }
@@ -122,4 +124,11 @@ print("Settling Time:")
 print(settling_time.model_dump_json(indent=2))
 print(80*"=")
 
+y_max = step_response.data.signals[0].values[-1]
+first_crossing_props = FirstCrossingProps(signal_name="y", threshold=0.63 * y_max)
+first_crossing = get_first_crossing(step_response.data, props=first_crossing_props)
+print(80*"=")
+print("First Crossing:")
+print(first_crossing.model_dump_json(indent=2))
+print(80*"=")
 

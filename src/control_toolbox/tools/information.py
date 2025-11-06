@@ -2,7 +2,7 @@ from pathlib import Path
 from typing import Dict, List, Optional
 from fmpy import read_model_description
 from pydantic import BaseModel
-from control_toolbox.schema import ResponseModel, Source
+from control_toolbox.core import ResponseModel, Source
 from control_toolbox.config import get_fmu_dir
 
 ########################################################

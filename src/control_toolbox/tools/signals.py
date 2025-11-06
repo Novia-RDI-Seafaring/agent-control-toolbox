@@ -1,6 +1,6 @@
 from plotly.graph_objs.pie import title
 from pydantic import BaseModel, Field, model_validator
-from control_toolbox.schema import ResponseModel, DataModel, Signal, Source, AttributesGroup
+from control_toolbox.core import ResponseModel, DataModel, Signal, Source, AttributesGroup
 from typing import List, Tuple, Optional, Dict
 import numpy as np
 from datetime import datetime, timezone

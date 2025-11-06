@@ -1,6 +1,6 @@
 import numpy as np
 from typing import Optional
-from control_toolbox.schema import DataModel, Signal
+from control_toolbox.core import DataModel, Signal
 
 def ndarray_to_data_model(data: np.ndarray) -> DataModel:
     """

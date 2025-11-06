@@ -2,7 +2,7 @@ import numpy as np
 from scipy.signal import find_peaks as scipy_find_peaks
 from typing import List, Optional, Dict, Tuple
 from pydantic import BaseModel, Field
-from control_toolbox.schema import ResponseModel, DataModel, Source, AttributesGroup
+from control_toolbox.core import ResponseModel, DataModel, Source, AttributesGroup
 
 ########################################################
 # SCHEMAS
@@ -164,6 +164,43 @@ def _first_cross(
 ########################################################
 # TOOLS FUNCTIONS
 ########################################################
+
+class FirstCrossingProps(BaseModel):
+    signal_name: str = Field(..., description="Name of the signal.")
+    threshold: float = Field(..., description="Threshold to detect.")
+    start_index: int = Field(default=0, description="Index to start the search from.")
+    is_upward: bool = Field(default=True, description="True for upward crossing (>=), False for downward crossing (<=).")
+
+def get_first_crossing(data: DataModel, props: FirstCrossingProps) -> ResponseModel:
+    """
+    Finds the first crossing of a threshold in a signal.
+    """
+    points = []
+
+    t = np.asarray(data.timestamps, dtype=float)
+    signal_found = False
+    for s in data.signals:
+        if s.name == props.signal_name:
+            signal_found = True
+            x = np.asarray(s.values, dtype=float)
+            tc, yc = _first_cross(t, x, props.threshold, props.is_upward, props.start_index)
+            points.append(Point(timestamp=tc, value=yc, description=f"Time point when signal {s.name} first reaches value {props.threshold:.2f}"))
+            break
+    
+    if not signal_found:
+        raise ValueError(f"Signal '{props.signal_name}' not found in data")
+
+    return ResponseModel(
+        source=Source(tool_name="get_first_crossing_tool"),
+        attributes=[
+            AttributesGroup(
+                title="First crossing results",
+                attributes=points,
+                description="First sample (t, y) after 'start_index' where 'values' crosses the given 'threshold'."
+            )
+        ]
+    )
+
 def find_characteristic_points(data: DataModel) -> ResponseModel:
     """
     Finds the characteristic points of step responses.
