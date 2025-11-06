@@ -128,3 +128,70 @@ def identify_fopdt_from_step(data: DataModel, props: IdentificationProps) -> Res
             )
             )]
     )
+
+
+
+class XcorrProps(BaseModel):
+    x_name: str = Field(..., description="Name of the input signal")
+    y_name: str = Field(..., description="Name of the output signal")
+
+class CorrelationResults(BaseModel):
+    correlation_coefficient: float = Field(..., description="Maximum cross-correlation value")
+    lag_samples: int = Field(..., description="Lag (in samples) at which maximum correlation occurs")
+    lag_time: float = Field(..., description="Lag (in time units) corresponding to lag_samples")
+
+def xcorr_analysis(data: DataModel, props: XcorrProps) -> ResponseModel:
+    """
+    Perform cross-correlation analysis between two signals x and y.
+    Identifies the lag (both in samples and time) that maximizes the cross-correlation.
+    """
+    x = y = None
+
+    for s in data.signals:
+        if s.name == props.x_name:
+            x = np.asarray(s.values, dtype=float)
+        elif s.name == props.y_name:
+            y = np.asarray(s.values, dtype=float)
+
+    if x is None:
+        raise ValueError(f"Signal '{props.x_name}' not found in data")
+    if y is None:
+        raise ValueError(f"Signal '{props.y_name}' not found in data")
+
+    # Compute full cross-correlation
+    xcorr = np.correlate(x, y, mode='full')
+    lags = np.arange(-len(x) + 1, len(y))
+
+    # Find lag with maximum correlation
+    lag_idx = np.argmax(xcorr)
+    correlation_coefficient = float(xcorr[lag_idx])
+    lag_samples = int(lags[lag_idx])
+
+    # Convert lag in samples to time units (assumes uniform sampling)
+    timestamps = np.asarray(data.timestamps)
+    dt = float(np.mean(np.diff(timestamps)))  # average sampling interval
+    lag_time = lag_samples * dt
+
+    # Build response
+    results = CorrelationResults(
+        correlation_coefficient=correlation_coefficient,
+        lag_samples=lag_samples,
+        lag_time=lag_time
+    )
+
+    return ResponseModel(
+        source=Source(tool_name="xcorr_tool"),
+        attributes=[AttributesGroup(
+            title="Cross-Correlation Results",
+            attributes=[results],
+            description=(
+                f"Cross-correlation between signals '{props.x_name}' and '{props.y_name}'. "
+                f"Maximum correlation at lag = {lag_samples} samples ({lag_time:.3f} time units)."
+            )
+        )]
+    )
+
+
+
+ 
+    

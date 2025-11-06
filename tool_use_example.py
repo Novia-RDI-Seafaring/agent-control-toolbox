@@ -19,7 +19,9 @@ from control_toolbox.tools.analysis import (
     )
 from control_toolbox.tools.identification import (
     identify_fopdt_from_step,
-    IdentificationProps
+    IdentificationProps,
+    xcorr_analysis,
+    XcorrProps
     )
 
 ########################################################
@@ -158,4 +160,14 @@ identification = identify_fopdt_from_step(step_response.data, props=identificati
 print(80*"=")
 print("Identification:")
 print(identification.model_dump_json(indent=2))
+print(80*"=")
+
+xcorr_props = XcorrProps(
+    x_name="u",
+    y_name="y",
+)
+xcorr = xcorr_analysis(step_response.data, props=xcorr_props)
+print(80*"=")
+print("Xcorr:")
+print(xcorr.model_dump_json(indent=2))
 print(80*"=")
