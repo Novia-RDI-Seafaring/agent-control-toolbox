@@ -151,7 +151,7 @@ print(80*"=")
 identification_props = IdentificationProps(
     input_name="u",
     output_name="y",
-    method="tangent",
+    method="s-k",
     model="fopdt",
 )
 identification = identify_fopdt_from_step(step_response.data, props=identification_props)

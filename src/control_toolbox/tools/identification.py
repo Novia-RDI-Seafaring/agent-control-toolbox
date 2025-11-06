@@ -5,7 +5,8 @@ from typing import Literal, Optional
 from control_toolbox.tools.analysis import (
     find_inflection_point, 
     InflectionPointProps,
-    _get_inflection_point
+    _get_inflection_point,
+    _first_cross
     )
 from control_toolbox.core import AttributesGroup
 import numpy as np
@@ -13,7 +14,14 @@ import numpy as np
 class IdentificationProps(BaseModel):
     input_name: str = Field(..., description="Name of the input signal")
     output_name: str = Field(..., description="Name of the output signal")
-    method: Literal["tangent"] = Field(..., description="Method to identify the model")
+    method: Literal["tangent", "smith", "s-k"] = Field(..., 
+        description=(
+            "Method to identify the model. Methods: "
+            " 'tangent': Inflection-point method "
+            " 'smith': Smith method"
+            " 's-k': Sundaresan-Krishnaswamy method"
+            )
+        )
     model: Literal["fopdt"] = Field(..., description="Model to identify")
 
 class FOPDTModel(BaseModel):
@@ -63,6 +71,42 @@ def identify_fopdt_from_step(data: DataModel, props: IdentificationProps) -> Res
         T = t_i + (y_inf - y_i) / slope - t_step - L if slope != 0 else float("inf") # point where reaches the steady statevalue -> tiem constant T
         K = y_step / u_step if u_step != 0 else 0.0
 
+        description = (
+            "FOPDT model identified from step response using the tangent method. "
+            "It locates the inflection point of the output response and uses the "#"
+            "corresponding tangent line to estimate the time constant (T) and dead time (L)."
+        )
+        
+    elif props.method == "smith":
+        t28, y28 = _first_cross(t, y, 0.283 * y_inf)
+        t63, y63 = _first_cross(t, y, 0.632 * y_inf)
+
+        # system parameters
+        T = 3/2 * (t63 - t28)
+        L = t63 - T
+        K = y_step / u_step if u_step != 0 else 0.0
+
+        description = (
+            "FOPDT model identified from step response using the Smith method. "
+            "It uses characteristic points on the response curve (typically at 28.3% and 63.2% "
+            "of the total change) to calculate the time constant (T) and dead time (L) analytically."
+        )
+
+    elif props.method == "s-k":
+        t35, y35 = _first_cross(t, y, 0.353 * y_inf)
+        t85, y85 = _first_cross(t, y, 0.853 * y_inf)
+
+        # system parameters
+        T = 2/3 * (t85 - t35)
+        L = 1.3 * t35 - 0.29 * t85
+        K = y_step / u_step if u_step != 0 else 0.0
+
+        description = (
+            "FOPDT model identified from step response using the Sundaresan–Krishnaswamy (S–K) method. "
+            "It uses the times at which the response reaches 35.3% and 85.3% of the total change "
+            "to analytically estimate the time constant (T) and dead time (L)."
+        )
+
     else:
         raise ValueError(f"Method '{props.method}' not supported")
 
@@ -70,7 +114,7 @@ def identify_fopdt_from_step(data: DataModel, props: IdentificationProps) -> Res
         K=K,
         L=L,
         T=T,
-        description=f"FOPDT model identified from step response"
+        description=description
         )
 
     return ResponseModel(
@@ -78,6 +122,9 @@ def identify_fopdt_from_step(data: DataModel, props: IdentificationProps) -> Res
         attributes=[AttributesGroup(
             title="FOPDT model identification results",
             attributes=[model],
-            description=f"FOPDT model identified from step response"
+            description = (
+                "Identified FOPDT parameters from step response data: "
+                "K (process gain), T (time constant), L (dead time)."
+            )
             )]
     )
