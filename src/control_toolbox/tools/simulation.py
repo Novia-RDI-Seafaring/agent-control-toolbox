@@ -118,6 +118,11 @@ def simulate(sim_props: SimulationProps, FMU_DIR: Optional[Path] = None, generat
     Returns a `DataModel` object containing the simulation results, including:  
     - `timestamps` — Time points where output values are sampled.  
     - `signals` — Recorded outputs corresponding to the requested variables.
+
+    **Important:**
+    - Ensure that the output `output_interval` and the signal `sampling_time` are integer multiples of the FMU model step size (default 0.1).
+    - Ensure that you have set all parameters correctly in the `start_values` dictionary before simulating.
+
     """
 
     if FMU_DIR is None:
@@ -195,8 +200,9 @@ def simulate_step_response(sim_props: SimulationProps, step_props: StepProps, FM
     - `data` (DataModel) — Simulation results.
     - `figures` (List[FigureModel]) — Figures associated with the response.
 
-    **Inportant:**
-    - 
+    **Important:**
+    - Ensure that the output `output_interval` and the signal `sampling_time` are integer multiples of the FMU model step size (default 0.1).
+    - Ensure that you have set all parameters correctly in the `start_values` dictionary before simulating.
 
     """
     # generate inputs
@@ -222,6 +228,11 @@ def simulate_impulse_response(sim_props: SimulationProps, impulse_props: Impulse
         
     Returns:
         DataModel: simulation results
+
+    **Important:**
+    - Ensure that the output `output_interval` and the signal `sampling_time` are integer multiples of the FMU model step size (default 0.1).
+    - Ensure that you have set all parameters correctly in the `start_values` dictionary before simulating.
+
     """
     # generate inputs
     sim_props.input = generate_impulse(impulse_props).data
