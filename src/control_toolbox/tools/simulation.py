@@ -119,7 +119,7 @@ def simulate(sim_props: SimulationProps, FMU_DIR: Optional[Path] = None, generat
     - `timestamps` — Time points where output values are sampled.  
     - `signals` — Recorded outputs corresponding to the requested variables.
     """
-    
+
     if FMU_DIR is None:
         FMU_DIR = get_fmu_dir()
     fmu_path = FMU_DIR / f"{sim_props.fmu_name}.fmu"
@@ -194,6 +194,10 @@ def simulate_step_response(sim_props: SimulationProps, step_props: StepProps, FM
     - `source` (Source) — Source of the tool and its arguments that generated the response.
     - `data` (DataModel) — Simulation results.
     - `figures` (List[FigureModel]) — Figures associated with the response.
+
+    **Inportant:**
+    - 
+
     """
     # generate inputs
     sim_props.input = generate_step(step_props).data

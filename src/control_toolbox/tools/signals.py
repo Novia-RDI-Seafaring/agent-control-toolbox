@@ -112,19 +112,34 @@ def generate_step(step: StepProps) -> ResponseModel:
     ```
 
     """
-    start = step.time_range.start
-    stop = step.time_range.stop
+    t_start = step.time_range.start
+    t_stop = step.time_range.stop
     dt = step.time_range.sampling_time
 
-    # number of samples in interval
-    dt = step.time_range.sampling_time
-    timestamps = np.array([start, step.step_time - dt, step.step_time, step.step_time + dt, stop])
-    values = np.array([step.initial_value, step.initial_value, step.final_value, step.final_value, step.final_value])
+    t_step = step.step_time
+    v0 = step.initial_value
+    v1 = step.final_value
+
+    if t_step <= t_start:
+        timestamps = [t_start, t_stop]
+        values = [v1, v1]
+    elif t_step >= t_stop:
+        timestamps = [t_start, t_stop]
+        values = [v0, v1]
+    elif t_step == t_start + dt:
+        timestamps = [t_start, t_start + dt, t_stop]
+        values = [v0, v1, v1]
+    elif t_step == t_stop - dt:
+        timestamps = [t_start, t_step, t_stop]
+        values = [v0, v1, v1]
+    else:
+        timestamps = [t_start, t_step - dt, t_step, t_step + dt, t_stop]
+        values = [v0, v0, v1, v1, v1]
 
     data = DataModel(
         timestamps=timestamps,
-        signals=[Signal(name=step.signal_name, values=values.tolist())]
-        )
+        signals=[Signal(name=step.signal_name, values=values)]
+    )
     return ResponseModel(
         source=Source(tool_name="generate_step_tool"),
         data=data
