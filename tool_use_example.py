@@ -1,4 +1,4 @@
-from control_toolbox.tools.information import get_fmu_names, get_model_description, get_all_model_descriptions
+from control_toolbox.tools.information import get_fmu_names, get_model_description
 from control_toolbox.tools.simulation import simulate, simulate_step_response, simulate_impulse_response, SimulationProps
 from control_toolbox.tools.signals import (
     generate_step,
@@ -41,12 +41,6 @@ print("Model Description:")
 print(model_description.model_dump_json(indent=2))
 print(80*"=")
 
-# get all model descriptions
-all_model_descriptions = get_all_model_descriptions()
-print(80*"=")
-print("All Model Descriptions:")
-print(all_model_descriptions.model_dump_json(indent=2))
-print(80*"=")
 ########################################################
 # TIMESETIES TOOLS
 ########################################################

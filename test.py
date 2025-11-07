@@ -1,7 +1,9 @@
+from codecs import mbcs_decode
 from pathlib import Path
-from typing import Dict, List, Optional
 from fmpy import read_model_description
 from pydantic import BaseModel, Field
+from typing import Dict, List, Optional, Literal, Tuple
+
 from control_toolbox.core import ResponseModel, Source
 from control_toolbox.config import get_fmu_dir
 
@@ -57,10 +59,9 @@ class ModelDescription(BaseModel):
     metadata: FMUMetadata = Field(description="Metadata information about the FMU model")
     simulation: FMUSimulationOptions = Field(description="Default simulation options for the FMU model")
 
-
 ########################################################
 # HELPERS FUNCTIONS
-########################################################
+########################################################    
 
 def _get_default_simulation_options(md):
     default_exp = md.defaultExperiment
@@ -158,10 +159,10 @@ def _get_fmu_information(fmu_path: str) -> ModelDescription:
         simulation=simulation_description
     )
 
+
 ########################################################
 # TOOLS
 ########################################################
-
 def get_fmu_names(fmu_dir: Optional[Path] = None) -> List[str]:
     """Lists all FMU models in the directory.
     Returns:
@@ -194,4 +195,13 @@ def get_model_description(fmu_name: str, FMU_DIR: Optional[Path] = None) -> Resp
         ),
         payload=information
     )
+
+
+
+
+
+
+
+
+
 
