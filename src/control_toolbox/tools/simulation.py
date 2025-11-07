@@ -104,11 +104,8 @@ def simulate(sim_props: SimulationProps, FMU_DIR: Optional[Path] = None, generat
     **When to use:**  
     Use this tool whenever you need to simulate the dynamic response of an FMU model.
 
-    **IMPORTANT**  
-    - Do **not** approximate or reason about simulation results — always call this tool to obtain actual simulated outputs.
-
     **Inputs:**  
-    Accepts a JSON object matching the `SimulationModel` schema with the following fields:  
+    Accepts a JSON object matching the `SimulationProps` schema with the following fields:  
     - `fmu_name` (string) — Name of the FMU to simulate.
     - `start_time` (float) — Simulation start time (in seconds). Typically 0.0 seconds.
     - `stop_time` (float) — Simulation stop time (in seconds).  
@@ -121,18 +118,8 @@ def simulate(sim_props: SimulationProps, FMU_DIR: Optional[Path] = None, generat
     Returns a `DataModel` object containing the simulation results, including:  
     - `timestamps` — Time points where output values are sampled.  
     - `signals` — Recorded outputs corresponding to the requested variables.
-
-    **Usage notes:**
-    - `fmu_name` is the name of the FMU model to simulate. Use the `get_fmu_names` tool to list available model names.   
-    - `start_time` and `stop_time` define the simulation interval.
-    - `input` is a `DataModel` describing the input signal. Step inputs can be generated using the `generate_step_tool`.  
-    - `output` lists only the desired output variables to record. Not all FMU outputs must be returned.  
-    - `output_interval` controls the sampling rate of recorded outputs.
-
-    **Rules:**  
-    - Always provide a valid FMU name available to the simulation environment.  
-    - Ensure that `start_values` contain all paramteters required by the FMU.  
     """
+    
     if FMU_DIR is None:
         FMU_DIR = get_fmu_dir()
     fmu_path = FMU_DIR / f"{sim_props.fmu_name}.fmu"
@@ -173,16 +160,40 @@ def simulate(sim_props: SimulationProps, FMU_DIR: Optional[Path] = None, generat
     )
 
 
-def simulate_step_response(sim_props: SimulationProps, step_props: StepProps, FMU_DIR: Optional[Path] = None, generate_plot: bool = False) -> DataModel:
+def simulate_step_response(sim_props: SimulationProps, step_props: StepProps, FMU_DIR: Optional[Path] = None, generate_plot: bool = False) -> ResponseModel:
     """
-    ### Tool: simulate_fmu_step
+    ### Tool: simulate_step_response
 
     Args:
         sim_props: SimulationProps containing the simulation parameters
-        step_props: StepProps containing the step signal properties
         
     Returns:
         DataModel: simulation results
+
+    **Purpose:**  
+    Simulate a step response of a Functional Mock-up Unit (FMU) model using the specified parameters and input signals.
+
+    **Inputs:**  
+    - `SimulationProps`: Accepts a JSON object matching the `SimulationProps` schema with the following fields:  
+        - `fmu_name` (string) — Name of the FMU to simulate.
+        - `start_time` (float) — Simulation start time (in seconds). Typically 0.0 seconds.
+        - `stop_time` (float) — Simulation stop time (in seconds).  
+        - `input` (DataModel) — Input signal(s) defined over the time interval.
+        - `output` (list[string]) — Names of FMU output variables to record.  
+        - `output_interval` (float) — Sampling interval for recorded outputs. Use an interval that is neither too short nor too long.
+        - `start_values` (object) — Use this to set parameter values or initial states for the FMU (e.g., controller gains).
+    - `StepProps`: Accepts a JSON object matching the `StepProps` schema with the following fields:  
+        - `signal_name` (string) — Name of the signal.
+        - `time_range` (TimeRange) — Time range over which the step signal is generated.
+        - `step_time` (float) — Time at which the step occurs.
+        - `initial_value` (float) — Initial value of the step signal.
+        - `final_value` (float) — Final value of the step signal.
+
+    **Outputs:**  
+    Returns a `ResponseModel` with the following fields:
+    - `source` (Source) — Source of the tool and its arguments that generated the response.
+    - `data` (DataModel) — Simulation results.
+    - `figures` (List[FigureModel]) — Figures associated with the response.
     """
     # generate inputs
     sim_props.input = generate_step(step_props).data
