@@ -224,7 +224,7 @@ def find_first_crossing(data: DataModel, props: FirstCrossingProps) -> ResponseM
         raise ValueError(f"Signal '{props.signal_name}' not found in data")
 
     return ResponseModel(
-        source=Source(tool_name="get_first_crossing_tool"),
+        #source=Source(tool_name="get_first_crossing_tool"),
         attributes=[
             AttributesGroup(
                 title="First crossing results",
@@ -259,7 +259,7 @@ def find_inflection_point(data: DataModel, props: InflectionPointProps) -> Respo
         raise ValueError(f"Signal '{props.signal_name}' not found in data")
     
     return ResponseModel(
-        source=Source(tool_name="get_inflection_point_tool"),
+        #source=Source(tool_name="get_inflection_point_tool"),
         attributes=[
             AttributesGroup(
                 title="Inflection point results",
@@ -336,9 +336,7 @@ def find_characteristic_points(data: DataModel) -> ResponseModel:
         characteristic_points.append(cps)
 
     return ResponseModel(
-        source=Source(
-            tool_name="find_characteristic_points_tool"
-            ),
+        #source=Source(tool_name="find_characteristic_points_tool"),
         payload=characteristic_points
     )
 
@@ -381,7 +379,7 @@ def find_peaks(data: DataModel, props: FindPeaksProps) -> ResponseModel:
     )
                 
     return ResponseModel(
-        source=Source(tool_name="find_peaks_tool"),
+        #source=Source(tool_name="find_peaks_tool"),
         attributes=[peaks_attribute_group]
     )
 
@@ -438,7 +436,7 @@ def find_settling_time(data: DataModel, props: SettlingTimeProps) -> ResponseMod
 
     # All done — now return a full response
     return ResponseModel(
-        source=Source(tool_name="find_settling_time_tool", arguments=props.model_dump()),
+        #source=Source(tool_name="find_settling_time_tool", arguments=props.model_dump()),
         attributes=[
             AttributesGroup(
                 title="Settling time results",

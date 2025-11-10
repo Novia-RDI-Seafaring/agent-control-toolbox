@@ -24,6 +24,10 @@ from control_toolbox.tools.identification import (
     XcorrProps
     )
 
+md = get_model_description(fmu_name="PI_FOPDT")
+
+print(md.model_dump_json(indent=2))
+print(80*"=")
 
 ###
 step_props = StepProps(
@@ -43,8 +47,8 @@ print(80*"=")
 simulation_props = SimulationProps(
         fmu_name="PI_FOPDT",
         start_time=0.0,
-        stop_time=30.0,
-        output_interval=1.0,
+        stop_time=20.0,
+        output_interval=0.5,
         start_values={
             "mode": False,
             "Kp": 1.0,

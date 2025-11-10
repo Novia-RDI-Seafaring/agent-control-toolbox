@@ -9,6 +9,7 @@ from control_toolbox.tools.analysis import (
     _first_cross
     )
 from control_toolbox.core import AttributesGroup
+from control_toolbox.tools.information import get_model_description
 import numpy as np
 
 class IdentificationProps(BaseModel):
@@ -48,6 +49,8 @@ def identify_fopdt_from_step(data: DataModel, props: IdentificationProps) -> Res
     """
     Identify a FOPDT model from a step response.
     """
+
+    # get step-size of data
     u = None
     y = None
     t = np.asarray(data.timestamps, dtype=float)
@@ -161,7 +164,7 @@ def identify_fopdt_from_step(data: DataModel, props: IdentificationProps) -> Res
         )
 
     return ResponseModel(
-        source=Source(tool_name="identify_fopdt_tool"),
+        #source=Source(tool_name="identify_fopdt_tool"),
         attributes=[AttributesGroup(
             title="FOPDT model identification results",
             attributes=[model, characteristic_points],
@@ -171,8 +174,6 @@ def identify_fopdt_from_step(data: DataModel, props: IdentificationProps) -> Res
             )
             )]
     )
-
-
 
 class XcorrProps(BaseModel):
     x_name: str = Field(..., description="Name of the input signal")
@@ -223,7 +224,7 @@ def xcorr_analysis(data: DataModel, props: XcorrProps) -> ResponseModel:
     )
 
     return ResponseModel(
-        source=Source(tool_name="xcorr_tool"),
+        #source=Source(tool_name="xcorr_tool"),
         attributes=[AttributesGroup(
             title="Cross-Correlation Results",
             attributes=[results],

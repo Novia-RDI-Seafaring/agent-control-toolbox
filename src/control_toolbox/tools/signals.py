@@ -141,7 +141,7 @@ def generate_step(step: StepProps) -> ResponseModel:
         signals=[Signal(name=step.signal_name, values=values)]
     )
     return ResponseModel(
-        source=Source(tool_name="generate_step_tool"),
+        #source=Source(tool_name="generate_step_tool"),
         data=data
     )
 
@@ -174,7 +174,7 @@ def generate_impulse(impulse: ImpulseProps) -> ResponseModel:
         signals=[Signal(name=impulse.signal_name, values=values.tolist())]
         )
     return ResponseModel(
-        source=Source(tool_name="generate_step_tool"),
+        #source=Source(tool_name="generate_step_tool"),
         data=data
     )
 

@@ -156,10 +156,10 @@ def simulate(sim_props: SimulationProps, FMU_DIR: Optional[Path] = None, generat
     data_model = ndarray_to_data_model(results)
     
     return ResponseModel(
-        source=Source(
-            tool_name="simulate",
-            arguments={"sim_props": sim_props}
-        ),
+        #source=Source(
+        #    tool_name="simulate",
+        #    arguments={"sim_props": sim_props}
+        #),
         data=data_model,
         figures=plotly_simulation(data_model) if generate_plot else None
     )
@@ -210,10 +210,10 @@ def simulate_step_response(sim_props: SimulationProps, step_props: StepProps, FM
     result = simulate(sim_props, FMU_DIR, generate_plot)
     
     return ResponseModel(
-        source=Source(
-            tool_name="simulate_step_response",
-            arguments={"sim_props": sim_props, "step_props": step_props}
-        ),
+        #source=Source(
+        #    tool_name="simulate_step_response",
+        #    arguments={"sim_props": sim_props, "step_props": step_props}
+        #),
         data=result.data,
         figures=result.figures
     )
@@ -239,10 +239,10 @@ def simulate_impulse_response(sim_props: SimulationProps, impulse_props: Impulse
     result = simulate(sim_props, FMU_DIR, generate_plot)
 
     return ResponseModel(
-        source=Source(
-            tool_name="simulate_impulse_response",
-            arguments={"sim_props": sim_props, "impulse_props": impulse_props}
-        ),
+        #source=Source(
+        #    tool_name="simulate_impulse_response",
+        #    arguments={"sim_props": sim_props, "impulse_props": impulse_props}
+        #),
         data=result.data,
         figures=result.figures
     )

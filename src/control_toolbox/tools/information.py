@@ -171,10 +171,10 @@ def get_fmu_names(fmu_dir: Optional[Path] = None) -> List[str]:
         fmu_dir = get_fmu_dir()
     names = [f.stem for f in fmu_dir.glob("*.fmu") if f.is_file()]
     return ResponseModel(
-        source=Source(
-            tool_name="get_fmu_names",
-            arguments={"fmu_dir": fmu_dir}
-        ),
+        #source=Source(
+        #    tool_name="get_fmu_names",
+        #    arguments={"fmu_dir": fmu_dir}
+        #),
         payload=names
     )
 
@@ -188,10 +188,10 @@ def get_model_description(fmu_name: str, FMU_DIR: Optional[Path] = None) -> Resp
     dir = str(FMU_DIR / f"{fmu_name}.fmu")
     information = _get_fmu_information(dir)
     return ResponseModel(
-        source=Source(
-            tool_name="get_model_description",
-            arguments={"fmu_name": fmu_name}
-        ),
+        #source=Source(
+        #    tool_name="get_model_description",
+        #    arguments={"fmu_name": fmu_name}
+        #),
         payload=information
     )
 
