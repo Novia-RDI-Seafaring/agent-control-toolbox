@@ -47,11 +47,24 @@ class IdentificationParameters(BaseModel):
 
 def identify_fopdt_from_step(data: DataModel, props: IdentificationProps) -> ResponseModel:
     """
-    Identify a FOPDT model from a step response.
+    Identify a First Order Plus Dead Time (FOPDT) model from a step response.
 
-    **Important:**
-    - Ensure that the timestamps and signals in the DataModel are the same length.
-    - If data from previous tool runs should be used as input for this tool, make sure that they are passed unchanged.
+    **Usage:**
+    This tool analyzes a previously simulated or measured step response and fits a FOPDT model to it.
+
+    **Inputs:**
+    - `data`: A `DataModel` object that contains the step response signal to analyze.
+      The `data` object should come directly from the output of a previous simulation or measurement tool,
+      without any modification or reformatting.
+    - `props`: A `IdentificationProps` object that contains the identification parameters.
+
+    **Requirements:**
+    - The `timestamps` and `values` arrays in each signal of the `DataModel` must be exactly the same length.
+    - Do **not** resample, truncate, or alter the data from the previous tool before passing it here.
+    - Do **not** modify data from previous tool runs before passing it here.
+
+    **Output:**
+    Returns a `ResponseModel` containing the identified FOPDT parameters and diagnostic plots.
     """
 
     # get step-size of data
