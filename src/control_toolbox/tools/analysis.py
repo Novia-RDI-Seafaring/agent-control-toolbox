@@ -150,8 +150,8 @@ def _first_cross(
     start_index: int = 0,
 ) -> Tuple[float, float]:
     """
-    Returns the first sample (t, y) after `start_index` where `values` crosses the given `threshold`.
-    No interpolation — directly returns the sample time and value.
+    Returns the interpolated (t, y) after `start_index` where `values` crosses the given `threshold`.
+    Uses linear interpolation between samples to find the exact crossing point.
 
     Args:
         timestamps: List of sample time points (same length as values).
@@ -161,22 +161,35 @@ def _first_cross(
         start_index: Index to start the search from.
 
     Returns:
-        (time, value) tuple at the first threshold crossing, or (nan, nan) if none.
+        (time, value) tuple at the first threshold crossing (interpolated), or (nan, nan) if none.
     """
     t = np.asarray(timestamps)
     y = np.asarray(values)
-    yinf = values[-1]
 
-    if is_upward:
-        idx = np.where(y[start_index:] >= threshold)[0]
-    else:
-        idx = np.where(y[start_index:] <= threshold)[0]
+    # Find first index where threshold is crossed
+    mask = (y[start_index:] >= threshold) if is_upward else (y[start_index:] <= threshold)
+    idx = np.argmax(mask) if np.any(mask) else None
 
-    if idx.size > 0:
-        i = start_index + idx[0] - 1
-        return float(t[i]), float(y[i])
-    else:
+    if idx is None:
         return float("nan"), float("nan")
+    
+    i_cross = start_index + idx
+    
+    # If crossing at first point, can't interpolate backwards
+    if i_cross == 0:
+        return float(t[i_cross]), float(y[i_cross])
+    
+    # Interpolate between points before and at crossing
+    t0, t1 = t[i_cross - 1], t[i_cross]
+    y0, y1 = y[i_cross - 1], y[i_cross]
+    
+    # Linear interpolation: t_interp = t0 + (threshold - y0) * (t1 - t0) / (y1 - y0)
+    dy = y1 - y0
+    if np.abs(dy) > 1e-10:
+        t_interp = t0 + (threshold - y0) * (t1 - t0) / dy
+        return float(t_interp), float(threshold)
+    else:
+        return float(t[i_cross]), float(y[i_cross])
 
 ########################################################
 # HELPER FUNCTIONS
