@@ -1,5 +1,5 @@
 from control_toolbox.tools.information import get_fmu_names, get_model_description
-from control_toolbox.tools.simulation import simulate, simulate_step_response, simulate_impulse_response, SimulationProps
+from control_toolbox.tools.simulation import simulate, simulate_step_response, simulate_impulse_response, SimulationStepResponseProps, SimulationProps
 from control_toolbox.tools.signals import (
     generate_step,
     StepProps, TimeRange,
@@ -44,7 +44,7 @@ print(step_results.model_dump_json(indent=2))
 print(80*"=")
 
 # Create simulation properties
-simulation_props = SimulationProps(
+simulation_props = SimulationStepResponseProps(
         fmu_name="PI_FOPDT",
         start_time=0.0,
         stop_time=20.0,

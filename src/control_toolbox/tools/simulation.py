@@ -234,7 +234,17 @@ def simulate_step_response(sim_props: SimulationStepResponseProps, step_props: S
 
     """
     # generate inputs
-    sim_props.input = generate_step(step_props).data
+    input_step = generate_step(step_props).data
+
+    sim_props = SimulationProps(
+        fmu_name=sim_props.fmu_name,
+        start_time=sim_props.start_time,
+        stop_time=sim_props.stop_time,
+        input=input_step,
+        output=sim_props.output,
+        output_interval=sim_props.output_interval,
+        start_values=sim_props.start_values
+    )
     result = simulate(sim_props, FMU_DIR, generate_plot)
     
     return ResponseModel(
