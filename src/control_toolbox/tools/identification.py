@@ -23,6 +23,13 @@ class IdentificationProps(BaseModel):
             )
         )
     model: Literal["fopdt"] = Field(..., description="Model to identify")
+    step_threshold: Optional[float] = Field(
+        default=1E-3,
+        description=(
+            "Threshold for step detection. Changes in input signal smaller than this "
+            "value will be ignored. If None, uses 1% of the input signal range as default."
+        )
+    )
 
 class FOPDTModel(BaseModel):
     K: float = Field(..., description="System gain")
@@ -53,8 +60,16 @@ def identify_fopdt_from_step(data: DataModel, props: IdentificationProps) -> Res
     if y is None:
         raise ValueError(f"Signal '{props.output_name}' not found in data")
 
-    # detect where step changes
-    t_step = t[np.where(np.diff(u) != 0)[0]]
+    # determine threshold for step detection
+    if props.step_threshold is None:
+        # default to 1% of signal range
+        u_range = np.max(u) - np.min(u)
+        threshold = 0.01 * u_range if u_range > 0 else 1e-10
+    else:
+        threshold = props.step_threshold
+
+    # detect where step changes (only changes larger than threshold)
+    t_step = t[np.where(np.abs(np.diff(u)) > threshold)[0]]
     u_step = np.abs(u[0] - u[-1]) # step change of u
         
     y_inf = y[-1]
