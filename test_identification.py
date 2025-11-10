@@ -23,6 +23,7 @@ from control_toolbox.tools.identification import (
     xcorr_analysis,
     XcorrProps
     )
+import numpy as np
 
 md = get_model_description(fmu_name="PI_FOPDT")
 
@@ -67,8 +68,9 @@ print(80*"=")
 ###
 
 identification_props = IdentificationProps(
-    input_name="u",
     output_name="y",
+    input_step_time=step_props.step_time,
+    input_step_size=np.abs(step_props.final_value - step_props.initial_value),
     method="tangent",
     model="fopdt",
 )
