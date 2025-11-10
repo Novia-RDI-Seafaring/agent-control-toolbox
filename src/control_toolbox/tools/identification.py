@@ -40,6 +40,9 @@ class FOPDTModel(BaseModel):
 ########################################################
 # TOOLS
 ########################################################
+from typing import Dict
+class IdentificationParameters(BaseModel):
+    characteristic_points: Dict[str, float] = Field(..., description="Characteristic points of the step response")
 
 def identify_fopdt_from_step(data: DataModel, props: IdentificationProps) -> ResponseModel:
     """
@@ -69,12 +72,23 @@ def identify_fopdt_from_step(data: DataModel, props: IdentificationProps) -> Res
         threshold = props.step_threshold
 
     # detect where step changes (only changes larger than threshold)
-    t_step = t[np.where(np.abs(np.diff(u)) > threshold)[0]]
+    t_step_indices = np.where(np.abs(np.diff(u)) > threshold)[0]
+    t_step_array = t[t_step_indices] if len(t_step_indices) > 0 else np.array([], dtype=float)
+    t_step = float(t_step_array[0]) if len(t_step_array) > 0 else float("nan")  # first step time
     u_step = np.abs(u[0] - u[-1]) # step change of u
         
     y_inf = y[-1]
     y_0 = y[0]
     y_step = y_inf - y_0 # step change of y
+
+    characteristic_points = {
+        "y_inf": float(y_inf),
+        "y_0": float(y_0),
+        "y_step": float(y_step),
+        "u_step": float(u_step),
+        "t_step": t_step,
+        "t_step_all": t_step_array.tolist() if len(t_step_array) > 0 else [],  # all step times as list
+    }
     
     if props.method == "tangent":
 
@@ -91,6 +105,10 @@ def identify_fopdt_from_step(data: DataModel, props: IdentificationProps) -> Res
             "It locates the inflection point of the output response and uses the "#"
             "corresponding tangent line to estimate the time constant (T) and dead time (L)."
         )
+
+        characteristic_points["t_i"] = float(t_i)
+        characteristic_points["y_i"] = float(y_i)
+        characteristic_points["slope"] = float(slope)
         
     elif props.method == "smith":
         t28, y28 = _first_cross(t, y, 0.283 * y_inf)
@@ -107,6 +125,11 @@ def identify_fopdt_from_step(data: DataModel, props: IdentificationProps) -> Res
             "of the total change) to calculate the time constant (T) and dead time (L) analytically."
         )
 
+        characteristic_points["t28"] = float(t28)
+        characteristic_points["y28"] = float(y28)
+        characteristic_points["t63"] = float(t63)
+        characteristic_points["y63"] = float(y63)
+
     elif props.method == "s-k":
         t35, y35 = _first_cross(t, y, 0.353 * y_inf)
         t85, y85 = _first_cross(t, y, 0.853 * y_inf)
@@ -122,6 +145,11 @@ def identify_fopdt_from_step(data: DataModel, props: IdentificationProps) -> Res
             "to analytically estimate the time constant (T) and dead time (L)."
         )
 
+        characteristic_points["t35"] = float(t35)
+        characteristic_points["y35"] = float(y35)
+        characteristic_points["t85"] = float(t85)
+        characteristic_points["y85"] = float(y85)
+
     else:
         raise ValueError(f"Method '{props.method}' not supported")
 
@@ -136,7 +164,7 @@ def identify_fopdt_from_step(data: DataModel, props: IdentificationProps) -> Res
         source=Source(tool_name="identify_fopdt_tool"),
         attributes=[AttributesGroup(
             title="FOPDT model identification results",
-            attributes=[model],
+            attributes=[model, characteristic_points],
             description = (
                 "Identified FOPDT parameters from step response data: "
                 "K (process gain), T (time constant), L (dead time)."
