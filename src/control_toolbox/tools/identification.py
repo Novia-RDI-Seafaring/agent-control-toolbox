@@ -62,6 +62,7 @@ def identify_fopdt_from_step(data: DataModel, props: IdentificationProps) -> Res
     - The `timestamps` and `values` arrays in each signal of the `DataModel` must be exactly the same length.
     - Do **not** resample, truncate, or alter the data from the previous tool before passing it here.
     - Do **not** modify data from previous tool runs before passing it here.
+    - In the IdentificationProps, ensure that the input_name and output_name match the names of the input and output signals in the DataModel.
 
     **Output:**
     Returns a `ResponseModel` containing the identified FOPDT parameters and diagnostic plots.
