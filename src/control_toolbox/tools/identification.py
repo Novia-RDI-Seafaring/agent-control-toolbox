@@ -49,8 +49,9 @@ def identify_fopdt_from_step(data: DataModel, props: IdentificationProps) -> Res
     """
     Identify a FOPDT model from a step response.
 
-    **Imprtant**
+    **Important:**
     - Ensure that the timestamps and signals in the DataModel are the same length.
+    - If data from previous tool runs should be used as input for this tool, make sure that they are passed unchanged.
     """
 
     # get step-size of data
