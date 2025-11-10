@@ -49,6 +49,35 @@ class SimulationProps(BaseModel):
         )
     )
 
+class SimulationStepResponseProps(BaseModel):
+    fmu_name: str = Field(
+        description="Name of the FMU model to simulate"
+    )
+    start_time: Optional[Union[float, str]] = Field(
+        default=0.0,
+        description="Simulation start time"
+    )
+    stop_time: Optional[Union[float, str]] = Field(
+        default=1.0,
+        description="Simulation stop time"
+    )
+    output: Optional[List[str]] = Field(
+        default=None,
+        description="Sequence of output variable names to record"
+    )
+    output_interval: Union[float, str] = Field(
+        default=None,
+        description="Interval for sampling the output. Must be integer multiple of FMU models internal step size."
+    )
+    start_values: Optional[Dict[str, Any]] = Field(
+        default=None,
+        description=(
+            "Dictionary of initial parameter and input values. "
+            "Use this function to change the values of parameters and "
+            "inputs from their default values."
+        )
+    )
+
 ########################################################
 # PLOTTING
 ########################################################
@@ -165,7 +194,7 @@ def simulate(sim_props: SimulationProps, FMU_DIR: Optional[Path] = None, generat
     )
 
 
-def simulate_step_response(sim_props: SimulationProps, step_props: StepProps, FMU_DIR: Optional[Path] = None, generate_plot: bool = False) -> ResponseModel:
+def simulate_step_response(sim_props: SimulationStepResponseProps, step_props: StepProps, FMU_DIR: Optional[Path] = None, generate_plot: bool = False) -> ResponseModel:
     """
     ### Tool: simulate_step_response
 
@@ -179,11 +208,10 @@ def simulate_step_response(sim_props: SimulationProps, step_props: StepProps, FM
     Simulate a step response of a Functional Mock-up Unit (FMU) model using the specified parameters and input signals.
 
     **Inputs:**  
-    - `SimulationProps`: Accepts a JSON object matching the `SimulationProps` schema with the following fields:  
+    - `SimulationProps`: Accepts a JSON object matching the `SimulationStepResponseProps` schema with the following fields:  
         - `fmu_name` (string) — Name of the FMU to simulate.
         - `start_time` (float) — Simulation start time (in seconds). Typically 0.0 seconds.
         - `stop_time` (float) — Simulation stop time (in seconds).  
-        - `input` (DataModel) — Input signal(s) defined over the time interval.
         - `output` (list[string]) — Names of FMU output variables to record.  
         - `output_interval` (float) — Sampling interval for recorded outputs. Use an interval that is neither too short nor too long.
         - `start_values` (object) — Use this to set parameter values or initial states for the FMU (e.g., controller gains).
