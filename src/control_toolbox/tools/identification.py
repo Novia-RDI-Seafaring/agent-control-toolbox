@@ -16,7 +16,7 @@ class IdentificationProps(BaseModel):
     #input_name: str = Field(..., description="Name of the input signal")
     output_name: str = Field(..., description="Name of the output signal")
     input_step_size: float = Field(
-        default=1.0,
+        ...,
         description="The size of the input step that was applied in the experiment."
     )
     method: Literal["tangent", "smith", "s-k"] = Field(..., 
