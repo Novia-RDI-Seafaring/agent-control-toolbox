@@ -15,13 +15,9 @@ import numpy as np
 class IdentificationProps(BaseModel):
     #input_name: str = Field(..., description="Name of the input signal")
     output_name: str = Field(..., description="Name of the output signal")
-    input_step_time: float = Field(
-        default=None,
-        description="The timestamp of when the step was applied in the experiment."
-    )
     input_step_size: float = Field(
         default=1.0,
-        description="The size of the step that was applied in the experiment."
+        description="The size of the input step that was applied in the experiment."
     )
     method: Literal["tangent", "smith", "s-k"] = Field(..., 
         description=(
@@ -68,15 +64,11 @@ def identify_fopdt_from_step(data: DataModel, props: IdentificationProps) -> Res
     if y is None:
         raise ValueError(f"Signal '{props.output_name}' not found in data")
 
-    # determine threshold for step detection
-    if props.step_threshold is None:
-        # default to 1% of signal range
-        u_range = np.max(u) - np.min(u)
-        threshold = 0.01 * u_range if u_range > 0 else 1e-10
-    else:
-        threshold = props.step_threshold
+    dt = data.timestamps[1] - data.timestamps[0]
 
-    t_step = props.input_step_time
+    # time point when step is applied
+    t_step = 0.0 + dt
+    # input step size
     u_step = props.input_step_size
         
     y_inf = y[-1]

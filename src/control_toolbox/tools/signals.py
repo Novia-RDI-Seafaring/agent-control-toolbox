@@ -32,16 +32,15 @@ class StepProps(BaseModel):
         default_factory=lambda: TimeRange(start=0.0, stop=1.0, sampling_time=0.1),
         description="Time range over which the step signal is generated",
     )
-    step_time: float = Field(default=0.1, description="Time at which the step occurs")
     initial_value: float = Field(default=0.0, description="Initial value of the step signal")
     final_value: float = Field(default=1.0, description="Final value of the step signal")
 
-    @model_validator(mode="after")
-    def _check_step_time(self):
-        tr = self.time_range
-        if not (tr.start <= self.step_time <= tr.stop):
-            raise ValueError("step_time must be within [start, stop]")
-        return self
+    #@model_validator(mode="after")
+    #def _check_step_time(self):
+    #    tr = self.time_range
+    #    if not (tr.start <= self.step_time <= tr.stop):
+    #        raise ValueError("step_time must be within [start, stop]")
+    #    return self
 
 class ImpulseProps(BaseModel):
     """
@@ -82,7 +81,7 @@ class ImpulseProps(BaseModel):
 
 def generate_step(step: StepProps) -> ResponseModel:
     """
-    Generates a step signal.
+    Generates a step signal at time = 0.0 + sampling_time.
     
     Args:
         step: StepProps containing the step signal properties
@@ -91,7 +90,7 @@ def generate_step(step: StepProps) -> ResponseModel:
         DataModel: Step signal
 
     Usage: 
-    - Make sure thaht the step signal is generated with the correct signal name when passed to other tools as input.
+    - Make sure that the step signal is generated with the correct signal name when passed to other tools as input.
     - Make sure the lists of timestamps and values are the same length
     - Make sure the timestamps are in ascending order
     - Keep the timestamp and value lists as short as possible. It is enough to define the singal only at timestamps where change happens.
@@ -105,7 +104,6 @@ def generate_step(step: StepProps) -> ResponseModel:
             "stop": 10.0,
             "sampling_time": 0.1
         },
-        "step_time": 1.0,
         "initial_value": 0.0,
         "final_value": 1.0
     }
@@ -116,25 +114,11 @@ def generate_step(step: StepProps) -> ResponseModel:
     t_stop = step.time_range.stop
     dt = step.time_range.sampling_time
 
-    t_step = step.step_time
     v0 = step.initial_value
     v1 = step.final_value
 
-    if t_step <= t_start:
-        timestamps = [t_start, t_stop]
-        values = [v1, v1]
-    elif t_step >= t_stop:
-        timestamps = [t_start, t_stop]
-        values = [v0, v1]
-    elif t_step == t_start + dt:
-        timestamps = [t_start, t_start + dt, t_stop]
-        values = [v0, v1, v1]
-    elif t_step == t_stop - dt:
-        timestamps = [t_start, t_step, t_stop]
-        values = [v0, v1, v1]
-    else:
-        timestamps = [t_start, t_step - dt, t_step, t_step + dt, t_stop]
-        values = [v0, v0, v1, v1, v1]
+    timestamps = [t_start, t_start + dt, t_stop]
+    values = [v0, v1, v1]
 
     data = DataModel(
         timestamps=timestamps,
