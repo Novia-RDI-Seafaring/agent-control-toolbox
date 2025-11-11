@@ -1,7 +1,7 @@
 from pydantic import BaseModel, Field, model_validator
 from typing import Any, Optional, Dict, Union, List
 from datetime import datetime, timezone
-
+from control_toolbox.storage import IDataStorage
 ########################################################
 # DATA SCHEMA
 ########################################################
@@ -9,6 +9,11 @@ class Signal(BaseModel):
     name: str = Field(..., description="Name of the signal")
     values: List[float] = Field(..., description="List of values corresponding to the timestamps")
     unit: Optional[str] = Field(default=None, description="Unit of the signal")
+
+class DataModelTeaser(BaseModel):
+    timestamps: int = Field(..., description="Number of timestamps")
+    signals: List[str] = Field(..., description="List of signal names")
+    description: Optional[str] = Field(default=None, description="Description of the data")
 
 class DataModel(BaseModel):
     timestamps: List[float] = Field(
@@ -32,6 +37,13 @@ class DataModel(BaseModel):
                     f"does not match: timestamps={tlen}, values={len(s.values)}"
                 )
         return self
+    
+    def to_teaser(self) -> DataModelTeaser:
+        return DataModelTeaser(
+            timestamps=len(self.timestamps),
+            signals=[s.name for s in self.signals],
+            description=self.description
+        )
 
 class AttributesGroup(BaseModel):
     title: str = Field(..., description="Title/name of the attribute group")
