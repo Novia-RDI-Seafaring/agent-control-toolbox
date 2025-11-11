@@ -113,6 +113,27 @@ class InflectionPoint(BaseModel):
 class InflectionPointProps(BaseModel):
     signal_name: str = Field(..., description="Name of the signal.")
 
+class SettlingTimeProps(BaseModel):
+    """
+    Properties for finding steady state time point of a signal.
+    """
+    tolerance: float = Field(default=0.02, description="Tolerance for the steady state time point stays within a threshold (percentage) of steady-state value.")
+
+class SettlingTime(BaseModel):
+    signal_name: str = Field(..., description="Name of the signal.")
+    settling_time: float = Field(..., description="Settling time of the signal.")
+
+class RiseTime(BaseModel):
+    signal_name: str = Field(..., description="Name of the signal.")
+    rise_time: float = Field(..., description="Rise time of the signal.")
+    description: str = Field(..., description="Description of the rise time. The rise time is the time it takes for the signal to rise from 10% to 90% of its final value.")
+
+class Overshoot(BaseModel):
+    signal_name: str = Field(..., description="Name of the signal.")
+    max_value: float = Field(..., description="Maximum overshoot of the signal.")
+    percent: float = Field(..., description="Percentage of the overshoot relative to steady state value.")
+    description: str = Field(..., description="Description of the overshoot. The overshoot is the maximum deviation from the steady-state value after 90% of the change is reached.")
+
 ########################################################
 # HELPER FUNCTIONS
 ########################################################
@@ -389,16 +410,6 @@ def find_peaks(data: DataModel, props: FindPeaksProps) -> AttributesGroup:
                 
     return peaks_attribute_group
 
-class SettlingTimeProps(BaseModel):
-    """
-    Properties for finding steady state time point of a signal.
-    """
-    tolerance: float = Field(default=0.02, description="Tolerance for the steady state time point stays within a threshold (percentage) of steady-state value.")
-
-class SettlingTime(BaseModel):
-    signal_name: str = Field(..., description="Name of the signal.")
-    settling_time: float = Field(..., description="Settling time of the signal.")
-
 def find_settling_time(data: DataModel, props: SettlingTimeProps) -> AttributesGroup:
     """
     Finds the settling time of each signal in the data. The settling time is defined as the
@@ -447,11 +458,6 @@ def find_settling_time(data: DataModel, props: SettlingTimeProps) -> AttributesG
     )
     return attributes
 
-class RiseTime(BaseModel):
-    signal_name: str = Field(..., description="Name of the signal.")
-    rise_time: float = Field(..., description="Rise time of the signal.")
-    description: str = Field(..., description="Description of the rise time. The rise time is the time it takes for the signal to rise from 10% to 90% of its final value.")
-
 def find_rise_time(data: DataModel) -> AttributesGroup:
     """
     Finds the rise time of a signal. The rise time is the time it takes for the signal to rise from 10% to 90% of its final value.
@@ -478,12 +484,6 @@ def find_rise_time(data: DataModel) -> AttributesGroup:
     )
 
     return attributes
-
-class Overshoot(BaseModel):
-    signal_name: str = Field(..., description="Name of the signal.")
-    max_value: float = Field(..., description="Maximum overshoot of the signal.")
-    percent: float = Field(..., description="Percentage of the overshoot relative to steady state value.")
-    description: str = Field(..., description="Description of the overshoot. The overshoot is the maximum deviation from the steady-state value after 90% of the change is reached.")
 
 def find_overshoot(data: DataModel) -> AttributesGroup:
     """
