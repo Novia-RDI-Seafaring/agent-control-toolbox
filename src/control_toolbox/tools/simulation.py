@@ -4,7 +4,7 @@ from fmpy import simulate_fmu as fmpy_simulate_fmu
 from pydantic import BaseModel, Field
 from typing import Any
 
-from control_toolbox.core import DataModel, ResponseModel, Source, FigureModel
+from control_toolbox.core import DataModel, FigureModel
 from control_toolbox.tools.utils import data_model_to_ndarray, ndarray_to_data_model
 from control_toolbox.config import get_fmu_dir
 from control_toolbox.tools.signals import generate_step, StepProps

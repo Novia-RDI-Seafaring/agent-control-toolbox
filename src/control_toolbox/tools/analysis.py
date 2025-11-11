@@ -1,8 +1,8 @@
 import numpy as np
 from scipy.signal import find_peaks as scipy_find_peaks
-from typing import List, Optional, Dict, Tuple
+from typing import List, Optional, Dict, Tuple, Union, Any
 from pydantic import BaseModel, Field
-from control_toolbox.core import ResponseModel, DataModel, Source, AttributesGroup
+from control_toolbox.core import DataModel, AttributesGroup
 
 ########################################################
 # SCHEMAS
@@ -94,7 +94,7 @@ class PeakAttributes(BaseModel):
     timestamps: List[float] = Field(..., description="List of timestamps in the signal.")
     peak_values: List[float] = Field(..., description="List of values in the signal.")
     average_peak_period: float = Field(..., description="Average period of the peaks")
-    properties: Dict[str, float] = Field(..., description="Properties of the peaks")
+    properties: Dict[str, Union[float, List[float]]] = Field(..., description="Properties of the peaks")
 
 
 class FirstCrossingProps(BaseModel):
@@ -204,7 +204,7 @@ def _get_inflection_point(t, x):
 # TOOLS FUNCTIONS
 ########################################################
 
-def find_first_crossing(data: DataModel, props: FirstCrossingProps) -> ResponseModel:
+def find_first_crossing(data: DataModel, props: FirstCrossingProps) -> AttributesGroup:
     """
     Finds the first crossing of a threshold in a signal.
     """
@@ -217,24 +217,25 @@ def find_first_crossing(data: DataModel, props: FirstCrossingProps) -> ResponseM
             signal_found = True
             x = np.asarray(s.values, dtype=float)
             tc, yc = _first_cross(t, x, props.threshold, props.is_upward, props.start_index)
-            points.append(Point(timestamp=tc, value=yc, description=f"Time point when signal {s.name} first reaches value {props.threshold:.2f}"))
+            points.append(
+                Point(
+                    timestamp=tc,
+                    value=yc,
+                    description=f"Time point when signal {s.name} first reaches value {props.threshold:.2f}")
+                )
             break
     
     if not signal_found:
         raise ValueError(f"Signal '{props.signal_name}' not found in data")
 
-    return ResponseModel(
-        #source=Source(tool_name="get_first_crossing_tool"),
-        attributes=[
-            AttributesGroup(
+    attributes = AttributesGroup(
                 title="First crossing results",
                 attributes=points,
                 description="First sample (t, y) after 'start_index' where 'values' crosses the given 'threshold'."
             )
-        ]
-    )
+    return attributes
 
-def find_inflection_point(data: DataModel, props: InflectionPointProps) -> ResponseModel:
+def find_inflection_point(data: DataModel, props: InflectionPointProps) -> AttributesGroup:
     """
     Finds the inflection point of a signal.
     """
@@ -257,23 +258,20 @@ def find_inflection_point(data: DataModel, props: InflectionPointProps) -> Respo
     
     if not signal_found:
         raise ValueError(f"Signal '{props.signal_name}' not found in data")
-    
-    return ResponseModel(
-        #source=Source(tool_name="get_inflection_point_tool"),
-        attributes=[
-            AttributesGroup(
-                title="Inflection point results",
-                attributes=points,
-                description=(
-                    "Returns the inflection point of a signal. In monotonic response curves "
-                    "like typical step responses, the inflection point is the location of "
-                    "maximum slope — where the rate of change is highest."
-                ),
-            )
-        ],
+
+    attributes = AttributesGroup(
+        title="Inflection point results",
+        attributes=points,
+        description=(
+            "Returns the inflection point of a signal. In monotonic response curves "
+            "like typical step responses, the inflection point is the location of "
+            "maximum slope — where the rate of change is highest."
+        ),
     )
     
-def find_characteristic_points(data: DataModel) -> ResponseModel:
+    return attributes
+    
+def find_characteristic_points(data: DataModel) -> AttributesGroup:
     """
     Finds the characteristic points of step responses.
     
@@ -335,12 +333,15 @@ def find_characteristic_points(data: DataModel) -> ResponseModel:
         )
         characteristic_points.append(cps)
 
-    return ResponseModel(
-        #source=Source(tool_name="find_characteristic_points_tool"),
-        payload=characteristic_points
+    attributes = AttributesGroup(
+        title="Characteristic points results",
+        attributes=characteristic_points,
+        description="Characteristic points of the step response."
     )
 
-def find_peaks(data: DataModel, props: FindPeaksProps) -> ResponseModel:
+    return attributes
+
+def find_peaks(data: DataModel, props: FindPeaksProps) -> AttributesGroup:
     """
     Find peaks inside a signal based on peak properties.
 
@@ -363,12 +364,20 @@ def find_peaks(data: DataModel, props: FindPeaksProps) -> ResponseModel:
             # If less than 2 peaks, set period to NaN or 0
             average_peak_period = float("nan")
         
+        # Convert numpy arrays to lists for serialization
+        properties_serializable = {}
+        for key, value in properties.items():
+            if isinstance(value, np.ndarray):
+                properties_serializable[key] = value.tolist()
+            else:
+                properties_serializable[key] = float(value) if isinstance(value, (int, float, np.number)) else value
+        
         peak_attributes.append(PeakAttributes(
             signal_name=signal.name,
             timestamps=peak_timestamps,
             peak_values=peak_values,
             average_peak_period=average_peak_period,
-            properties=properties
+            properties=properties_serializable
         ))
 
     # collect results in attribute groups
@@ -378,10 +387,7 @@ def find_peaks(data: DataModel, props: FindPeaksProps) -> ResponseModel:
         description=f"Detected peaks in all signals"
     )
                 
-    return ResponseModel(
-        #source=Source(tool_name="find_peaks_tool"),
-        attributes=[peaks_attribute_group]
-    )
+    return peaks_attribute_group
 
 class SettlingTimeProps(BaseModel):
     """
@@ -393,7 +399,7 @@ class SettlingTime(BaseModel):
     signal_name: str = Field(..., description="Name of the signal.")
     settling_time: float = Field(..., description="Settling time of the signal.")
 
-def find_settling_time(data: DataModel, props: SettlingTimeProps) -> ResponseModel:
+def find_settling_time(data: DataModel, props: SettlingTimeProps) -> AttributesGroup:
     """
     Finds the settling time of each signal in the data. The settling time is defined as the
     first time point where the signal remains within a specified tolerance (percentage) of
@@ -434,17 +440,57 @@ def find_settling_time(data: DataModel, props: SettlingTimeProps) -> ResponseMod
             )
         )
 
-    # All done — now return a full response
-    return ResponseModel(
-        #source=Source(tool_name="find_settling_time_tool", arguments=props.model_dump()),
-        attributes=[
-            AttributesGroup(
-                title="Settling time results",
-                attributes=settling_attributes,
-                description="Settling times for each signal based on tolerance band."
+    attributes = AttributesGroup(
+        title="Settling time results",
+        attributes=settling_attributes,
+        description="Settling times for each signal based on tolerance band."
+    )
+    return attributes
+
+class RiseTime(BaseModel):
+    signal_name: str = Field(..., description="Name of the signal.")
+    rise_time: float = Field(..., description="Rise time of the signal.")
+    characteristic_points: List[Point] = Field(..., description="Characteristic points (t10, y10) and (t90, y90) of the rise time.")
+    description: str = Field(..., description="Description of the rise time. The rise time is the time it takes for the signal to rise from 10% to 90% of its final value.")
+
+def find_rise_time(data: DataModel) -> RiseTime:
+    """
+    Finds the rise time of a signal. The rise time is the time it takes for the signal to rise from 10% to 90% of its final value.
+    """
+    rise_times = []
+    for signal in data.signals:
+        x = np.asarray(signal.values, dtype=float)
+        t10, y10 = _first_cross(data.timestamps, x, 0.1 * x[-1])
+        t90, y90 = _first_cross(data.timestamps, x, 0.90 * x[-1])
+        rise_time = t90 - t10
+
+        rise_times.append(
+                RiseTime(
+                signal_name=signal.name,
+                rise_time=rise_time,
+                characteristic_points=[
+                    Point(
+                        timestamp=t10,
+                        value=y10,
+                        description=f"Characteristic point (t10={t10:.2f}, y10={y10:.2f}) when 10% of the total change is reached."
+                        ),
+                    Point(
+                        timestamp=t90,
+                        value=y90,
+                        description=f"Characteristic point (t90={t90:.2f}, y90={y90:.2f}) when 90% of the total change is reached."
+                        )
+                    ],
+                description=f"Rise time of the signal {signal.name} is {rise_time:.2f}."
             )
-        ]
+        )
+
+
+    attributes = AttributesGroup(
+        title="Rise time of signals",
+        attributes=rise_times,
+        description="Rise time of the signals"
     )
 
+    return attributes
 
 
