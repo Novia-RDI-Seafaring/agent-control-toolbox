@@ -1,8 +1,11 @@
-from control_toolbox.storage import InMemoryDataStorage, IDataStorage
+from control_toolbox.storage import InMemoryDataStorage, IDataStorage, ReprStore, StoredRepresentation
 from dataclasses import dataclass
 import pytest
 from typing import Literal, Optional, Generic, Type, TypeVar
 import uuid
+
+from control_toolbox.core import DataModel, DataModelTeaser
+from pydantic import BaseModel
 
 @dataclass
 class SomeData:
@@ -129,3 +132,49 @@ def test_abstract_data_storage():
     assert id2 != id, f"Data with id {id2} should be stored with a new id, not the same as {id}"
     assert storage.has(id2), f"Data with id {id2} should be in storage"
     assert not storage.has(id), f"Data with id {id} should not be in storage"
+
+
+def test_repr_store():
+
+    class Concept(BaseModel):
+        name: str
+        description: str
+
+    class Gist(BaseModel):
+        name: str
+
+    storage = InMemoryDataStorage[Concept](model_type=Concept)
+    def convert(data: Concept, id: Optional[str]) -> StoredRepresentation[Concept, Gist]:
+        return StoredRepresentation[Concept, Gist](
+            repr_id=id or str(uuid.uuid4()),
+            kind=Concept,
+            content=Gist(name=data.name)
+    )
+    
+    repr_store = ReprStore[Concept, Gist](storage, Concept, Gist, convert)
+
+    fusion = Concept(name="Fussion Reactor", description="A device that converts matter into energy") 
+    fusion_gist = repr_store.convert(fusion)
+    assert storage.has(fusion_gist.repr_id), f"The fusion gist should be in storage"
+    assert storage.retrieve(fusion_gist.repr_id) == fusion, f"The fusion gist should be the same as the fusion"
+    assert storage.has(fusion_gist.repr_id), f"The fusion gist should be in storage"
+    assert storage.retrieve(fusion_gist.repr_id) == fusion, f"The fusion gist should be the same as the fusion"
+    
+    full_fusion = repr_store.recreate(fusion_gist)
+    
+    assert full_fusion == fusion, f"The full fusion should be {fusion}"
+    storage.delete(fusion_gist.repr_id)
+    assert not storage.has(fusion_gist.repr_id), f"The fusion gist should not be in storage"
+
+
+def test_repr_store_with_data_model():
+
+    storage = InMemoryDataStorage[DataModel](model_type=DataModel)
+    def convert(data: DataModel, id: Optional[str]) -> StoredRepresentation[DataModel, DataModelTeaser]:
+        return StoredRepresentation[DataModel, DataModelTeaser](
+            repr_id=id or str(uuid.uuid4()),
+            kind=DataModel,
+            content=DataModelTeaser(name=data.name, description=data.description)
+        )
+    
+    repr_store = ReprStore[DataModel, DataModelTeaser](storage, DataModel, DataModelTeaser, convert)
