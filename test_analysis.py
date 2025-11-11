@@ -19,6 +19,7 @@ from control_toolbox.tools.analysis import (
     SettlingTimeProps,
     find_settling_time,
     find_rise_time,
+    find_overshoot,
     FirstCrossingProps,
     find_first_crossing,
     InflectionPointProps,
@@ -63,7 +64,7 @@ simulation_props = SimulationStepResponseProps(
         output_interval=0.1,
         start_values={
             "mode": True,
-            "Kp": 1,
+            "Kp": 1.5,
             "Ti": 2,
         }
     )
@@ -102,4 +103,11 @@ rise_time = find_rise_time(data=step_response)
 print(80*"=")
 print("Rise Time:")
 print(rise_time.model_dump_json(indent=2))
+print(80*"=")
+
+# find overshoot
+overshoot = find_overshoot(data=step_response)
+print(80*"=")
+print("Overshoot:")
+print(overshoot.model_dump_json(indent=2))
 print(80*"=")

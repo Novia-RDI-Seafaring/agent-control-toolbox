@@ -450,10 +450,9 @@ def find_settling_time(data: DataModel, props: SettlingTimeProps) -> AttributesG
 class RiseTime(BaseModel):
     signal_name: str = Field(..., description="Name of the signal.")
     rise_time: float = Field(..., description="Rise time of the signal.")
-    characteristic_points: List[Point] = Field(..., description="Characteristic points (t10, y10) and (t90, y90) of the rise time.")
     description: str = Field(..., description="Description of the rise time. The rise time is the time it takes for the signal to rise from 10% to 90% of its final value.")
 
-def find_rise_time(data: DataModel) -> RiseTime:
+def find_rise_time(data: DataModel) -> AttributesGroup:
     """
     Finds the rise time of a signal. The rise time is the time it takes for the signal to rise from 10% to 90% of its final value.
     """
@@ -468,29 +467,54 @@ def find_rise_time(data: DataModel) -> RiseTime:
                 RiseTime(
                 signal_name=signal.name,
                 rise_time=rise_time,
-                characteristic_points=[
-                    Point(
-                        timestamp=t10,
-                        value=y10,
-                        description=f"Characteristic point (t10={t10:.2f}, y10={y10:.2f}) when 10% of the total change is reached."
-                        ),
-                    Point(
-                        timestamp=t90,
-                        value=y90,
-                        description=f"Characteristic point (t90={t90:.2f}, y90={y90:.2f}) when 90% of the total change is reached."
-                        )
-                    ],
                 description=f"Rise time of the signal {signal.name} is {rise_time:.2f}."
             )
         )
 
-
     attributes = AttributesGroup(
         title="Rise time of signals",
         attributes=rise_times,
-        description="Rise time of the signals"
+        description="Rise time of the signals is definend as the time it takes for the signal to rise from 10% to 90% of its final value."
     )
 
+    return attributes
+
+class Overshoot(BaseModel):
+    signal_name: str = Field(..., description="Name of the signal.")
+    max_value: float = Field(..., description="Maximum overshoot of the signal.")
+    percent: float = Field(..., description="Percentage of the overshoot relative to steady state value.")
+    description: str = Field(..., description="Description of the overshoot. The overshoot is the maximum deviation from the steady-state value after 90% of the change is reached.")
+
+def find_overshoot(data: DataModel) -> AttributesGroup:
+    """
+    Finds the maximum over- or undershoot of signal. The overshoot is the maximum deviation from the steady-state value after 90% of the change is reached.
+    """
+    overshoots = []
+    t = np.asarray(data.timestamps, dtype=float)
+    for signal in data.signals:
+        x = np.asarray(signal.values, dtype=float)
+        t90, y90 = _first_cross(data.timestamps, x, 0.90 * x[-1])
+        
+        # Find maximum value after t90
+        mask = t >= t90
+        max_value = float(np.max(x[mask]))
+        overshoot = float(max_value - x[-1]) if np.any(mask) else 0.0
+        percent = float(overshoot / x[-1] * 100)
+        
+        overshoots.append(
+            Overshoot(
+                signal_name=signal.name,
+                max_value=max_value,
+                percent=percent,
+                description=f"Maximum overshoot of the signal {signal.name} is {overshoot:.2f} ({percent:.2f}%)."
+            )
+        )
+
+    attributes = AttributesGroup(
+        title="Overshoot of signals",
+        attributes=overshoots,
+        description="Overshoot of the signals"
+    )
     return attributes
 
 
