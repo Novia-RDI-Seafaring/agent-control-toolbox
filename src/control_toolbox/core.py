@@ -19,6 +19,7 @@ class DataModel(BaseModel):
         default_factory=list,
         description="List of signals, defined using the Signal schema"
     )
+    description: Optional[str] = Field(default=None, description="Description of the data")
 
     @model_validator(mode="after")
     def check_length(self):

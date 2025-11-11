@@ -7,7 +7,7 @@ from typing import Any
 from control_toolbox.core import DataModel, ResponseModel, Source, FigureModel
 from control_toolbox.tools.utils import data_model_to_ndarray, ndarray_to_data_model
 from control_toolbox.config import get_fmu_dir
-from control_toolbox.tools.signals import generate_step, StepProps, generate_impulse, ImpulseProps
+from control_toolbox.tools.signals import generate_step, StepProps
 
 ########################################################
 # SCHEMAS
@@ -116,37 +116,18 @@ def plotly_simulation(data: DataModel):
 ########################################################
 # TOOLS
 ########################################################
-
-def simulate(sim_props: SimulationProps, FMU_DIR: Optional[Path] = None, generate_plot: bool = False) -> DataModel:
+def simulate(sim_props: SimulationProps) -> DataModel:
     """
-    ### Tool: simulate_fmu
+    Simualtets with input defined in the SimulationProps.
 
     Args:
         sim_props: SimulationProps containing the simulation parameters
-        
+
     Returns:
         DataModel: simulation results
 
     **Purpose:**  
     Run a time-domain simulation of a Functional Mock-up Unit (FMU) model using the specified parameters and input signals.
-
-    **When to use:**  
-    Use this tool whenever you need to simulate the dynamic response of an FMU model.
-
-    **Inputs:**  
-    Accepts a JSON object matching the `SimulationProps` schema with the following fields:  
-    - `fmu_name` (string) — Name of the FMU to simulate.
-    - `start_time` (float) — Simulation start time (in seconds). Typically 0.0 seconds.
-    - `stop_time` (float) — Simulation stop time (in seconds).  
-    - `input` (DataModel) — Input signal(s) defined over the time interval.
-    - `output` (list[string]) — Names of FMU output variables to record.  
-    - `output_interval` (float) — Sampling interval for recorded outputs. Use an interval that is neither too short nor too long.
-    - `start_values` (object) — Use this to set parameter values or initial states for the FMU (e.g., controller gains).
-
-    **Outputs:**  
-    Returns a `DataModel` object containing the simulation results, including:  
-    - `timestamps` — Time points where output values are sampled.  
-    - `signals` — Recorded outputs corresponding to the requested variables.
 
     **Important:**
     - Ensure that the output `output_interval` and the signal `sampling_time` are integer multiples of the FMU model step size (default 0.1).
@@ -154,9 +135,8 @@ def simulate(sim_props: SimulationProps, FMU_DIR: Optional[Path] = None, generat
 
     """
 
-    if FMU_DIR is None:
-        FMU_DIR = get_fmu_dir()
-    fmu_path = FMU_DIR / f"{sim_props.fmu_name}.fmu"
+    fmu_dir = get_fmu_dir()
+    fmu_path = fmu_dir / f"{sim_props.fmu_name}.fmu"
 
     if sim_props.start_values is None:
         sim_props.start_values = {}
@@ -182,59 +162,34 @@ def simulate(sim_props: SimulationProps, FMU_DIR: Optional[Path] = None, generat
         record_events=True
     )
 
-    data_model = ndarray_to_data_model(results)
+    data_model = ndarray_to_data_model(
+        data=results,
+        description=f"Simulation results for {sim_props.fmu_name} with input {sim_props.input.description}"
+        )
     
-    return ResponseModel(
-        #source=Source(
-        #    tool_name="simulate",
-        #    arguments={"sim_props": sim_props}
-        #),
-        data=data_model,
-        figures=plotly_simulation(data_model) if generate_plot else None
-    )
+    return data_model
 
-
-def simulate_step_response(sim_props: SimulationStepResponseProps, step_props: StepProps, FMU_DIR: Optional[Path] = None, generate_plot: bool = False) -> ResponseModel:
+def simulate_step_response(sim_props: SimulationStepResponseProps, step_props: StepProps) -> DataModel:
     """
-    ### Tool: simulate_step_response
+    Simualtets a step reponse with input defined in the StepProps.
 
     Args:
-        sim_props: SimulationProps containing the simulation parameters
+        sim_props: SimulationStepResponseProps containing the simulation parameters.
+        step_props: StepProps containing the step signal properties.
         
     Returns:
-        DataModel: simulation results
-
+        DataModel: step response of the FMU model.
     **Purpose:**  
     Simulate a step response of a Functional Mock-up Unit (FMU) model using the specified parameters and input signals.
-
-    **Inputs:**  
-    - `SimulationProps`: Accepts a JSON object matching the `SimulationStepResponseProps` schema with the following fields:  
-        - `fmu_name` (string) — Name of the FMU to simulate.
-        - `start_time` (float) — Simulation start time (in seconds). Typically 0.0 seconds.
-        - `stop_time` (float) — Simulation stop time (in seconds).  
-        - `output` (list[string]) — Names of FMU output variables to record.  
-        - `output_interval` (float) — Sampling interval for recorded outputs. Use an interval that is neither too short nor too long.
-        - `start_values` (object) — Use this to set parameter values or initial states for the FMU (e.g., controller gains).
-    - `StepProps`: Accepts a JSON object matching the `StepProps` schema with the following fields:  
-        - `signal_name` (string) — Name of the signal.
-        - `time_range` (TimeRange) — Time range over which the step signal is generated.
-        - `step_time` (float) — Time at which the step occurs.
-        - `initial_value` (float) — Initial value of the step signal.
-        - `final_value` (float) — Final value of the step signal.
-
-    **Outputs:**  
-    Returns a `ResponseModel` with the following fields:
-    - `source` (Source) — Source of the tool and its arguments that generated the response.
-    - `data` (DataModel) — Simulation results.
-    - `figures` (List[FigureModel]) — Figures associated with the response.
 
     **Important:**
     - Ensure that the output `output_interval` and the signal `sampling_time` are integer multiples of the FMU model step size (default 0.1).
     - Ensure that you have set all parameters correctly in the `start_values` dictionary before simulating.
 
     """
+
     # generate inputs
-    input_step = generate_step(step_props).data
+    input_step = generate_step(step_props)
 
     sim_props = SimulationProps(
         fmu_name=sim_props.fmu_name,
@@ -245,43 +200,10 @@ def simulate_step_response(sim_props: SimulationStepResponseProps, step_props: S
         output_interval=sim_props.output_interval,
         start_values=sim_props.start_values
     )
-    result = simulate(sim_props, FMU_DIR, generate_plot)
-    
-    return ResponseModel(
-        #source=Source(
-        #    tool_name="simulate_step_response",
-        #    arguments={"sim_props": sim_props, "step_props": step_props}
-        #),
-        data=result.data,
-        figures=result.figures
-    )
-
-def simulate_impulse_response(sim_props: SimulationProps, impulse_props: ImpulseProps, FMU_DIR: Optional[Path] = None, generate_plot: bool = False) -> DataModel:
+    data_model = simulate(sim_props)
+    data_model.description = f"""
+    Simulated step response of {sim_props.fmu_name} in time interval [{sim_props.start_time}, {sim_props.stop_time}].
+    A step from {step_props.initial_value} to {step_props.final_value} happens at t={step_props.time_range.start + step_props.time_range.sampling_time}.
     """
-    ### Tool: simulate_fmu_step
 
-    Args:
-        sim_props: SimulationProps containing the simulation parameters
-        impulse_props: ImpulseProps containing the impulse signal properties at time 'impulse_time' with magnutude 'magnitude'
-        
-    Returns:
-        DataModel: simulation results
-
-    **Important:**
-    - Ensure that the output `output_interval` and the signal `sampling_time` are integer multiples of the FMU model step size (default 0.1).
-    - Ensure that you have set all parameters correctly in the `start_values` dictionary before simulating.
-
-    """
-    # generate inputs
-    sim_props.input = generate_impulse(impulse_props).data
-    result = simulate(sim_props, FMU_DIR, generate_plot)
-
-    return ResponseModel(
-        #source=Source(
-        #    tool_name="simulate_impulse_response",
-        #    arguments={"sim_props": sim_props, "impulse_props": impulse_props}
-        #),
-        data=result.data,
-        figures=result.figures
-    )
-
+    return data_model

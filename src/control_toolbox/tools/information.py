@@ -167,17 +167,31 @@ class FMUNamesResponse(BaseModel):
 
 def get_fmu_names() -> List[str]:
     """Lists all FMU models in the directory.
+       
     Returns:
-    List[str]: List of model names (without .fmu extension)
+        fmu_names: List[str]: List of model names (without .fmu extension)
+
+    Purpose:
+        Get names of all available FMU simulation models.
     """
     fmu_dir = get_fmu_dir()
     names = [f.stem for f in fmu_dir.glob("*.fmu") if f.is_file()]
     return FMUNamesResponse(fmu_names=names)
 
-def get_model_description(fmu_name: str) -> ResponseModel:
-    """Gets the model description of an FMU model.
+def get_model_description(fmu_name: str) -> ModelDescription:
+    """Gets the model description of a specific FMU model.
+
+    Args:
+        fmu_name: str: Name of the FMU model (without .fmu extension)
+       
     Returns:
-    ModelDescription: Full FMU model description object
+        ModelDescription: The full model description object.
+
+    Purpose:
+        Get the model description of a model. Includes:
+            - FMUVariables: Variables defined in the FMU model (inputs, outputs, parameters)
+            - FMUMetadata: Metadata information about the FMU model
+            - FMUSimulationOptions: Default simulation options for the FMU model
     """
     fmu_dir = get_fmu_dir()
     dir = str(fmu_dir / f"{fmu_name}.fmu")

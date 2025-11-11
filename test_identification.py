@@ -1,10 +1,16 @@
-from control_toolbox.tools.information import get_fmu_names, get_model_description
-from control_toolbox.tools.simulation import simulate, simulate_step_response, simulate_impulse_response, SimulationStepResponseProps, SimulationProps
+from control_toolbox.tools.information import (
+    get_fmu_names,
+    get_model_description
+    )
+from control_toolbox.tools.simulation import (
+    simulate_step_response,
+    SimulationStepResponseProps,
+    SimulationProps
+    )
 from control_toolbox.tools.signals import (
     generate_step,
-    StepProps, TimeRange,
-    generate_impulse,
-    ImpulseProps
+    StepProps,
+    TimeRange,
     )
 from control_toolbox.tools.analysis import (
     find_characteristic_points,
@@ -20,8 +26,6 @@ from control_toolbox.tools.analysis import (
 from control_toolbox.tools.identification import (
     identify_fopdt_from_step,
     IdentificationProps,
-    xcorr_analysis,
-    XcorrProps
     )
 import numpy as np
 
@@ -74,11 +78,11 @@ print(80*"=")
 
 identification_props = IdentificationProps(
     output_name="y",
-    input_step_size=np.abs(step_props.final_value - step_props.initial_value),
-    method="tangent",
-    model="fopdt",
+    input_step_size=1.0,
+    input_step_time=0.1,
+    method="s-k"
 )
-identification = identify_fopdt_from_step(step_response.data, props=identification_props)
+identification = identify_fopdt_from_step(step_response, props=identification_props)
 print(80*"=")
 print("Identification:")
 print(identification.model_dump_json(indent=2))

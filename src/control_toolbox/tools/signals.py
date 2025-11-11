@@ -79,7 +79,7 @@ class ImpulseProps(BaseModel):
 # TOOLS
 ########################################################
 
-def generate_step(step: StepProps) -> ResponseModel:
+def generate_step(step: StepProps) -> DataModel:
     """
     Generates a step signal at time = 0.0 + sampling_time.
     
@@ -122,43 +122,7 @@ def generate_step(step: StepProps) -> ResponseModel:
 
     data = DataModel(
         timestamps=timestamps,
-        signals=[Signal(name=step.signal_name, values=values)]
+        signals=[Signal(name=step.signal_name, values=values)],
+        description=f"Step signal on time interval [{t_start}, {t_stop}]. A step from {v0} to {v1} happens at t={t_start + dt}."
     )
-    return ResponseModel(
-        #source=Source(tool_name="generate_step_tool"),
-        data=data
-    )
-
-def generate_impulse(impulse: ImpulseProps) -> ResponseModel:
-    """
-    Generates a unit impulse signal.
-    
-    Args:
-        impulse: ImpulseProps containing the impulse signal properties
-        
-    Returns:
-        DataModel: Impulse signal
-
-    Example: Generate a unit impulse at t=1 seconds on the time interval [0, 10.0] seconds.
-    """
-    start = impulse.time_range.start
-    stop = impulse.time_range.stop
-    dt = impulse.time_range.sampling_time
-
-    # number of samples in interval
-    dt = impulse.time_range.sampling_time
-    timestamps = np.arange(start, stop + dt, dt)
-    values = np.zeros_like(timestamps)
-    # index of impulse
-    idx = np.argmin(np.abs(timestamps - impulse.impulse_time))
-    values[idx] = impulse.magnitude
-
-    data = DataModel(
-        timestamps=timestamps,
-        signals=[Signal(name=impulse.signal_name, values=values.tolist())]
-        )
-    return ResponseModel(
-        #source=Source(tool_name="generate_step_tool"),
-        data=data
-    )
-
+    return data
