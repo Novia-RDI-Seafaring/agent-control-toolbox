@@ -38,12 +38,11 @@ class DataModel(BaseModel):
                 )
         return self
     
-    @classmethod
-    def to_teaser(cls) -> DataModelTeaser:
+    def to_teaser(self) -> DataModelTeaser:
         return DataModelTeaser(
-            timestamps=len(cls.timestamps),
-            signals=[s.name for s in cls.signals],
-            description=cls.description
+            timestamps=len(self.timestamps),
+            signals=[s.name for s in self.signals],
+            description=self.description
         )
 
 class AttributesGroup(BaseModel):
