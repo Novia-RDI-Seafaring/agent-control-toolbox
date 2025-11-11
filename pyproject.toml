@@ -16,5 +16,15 @@ dependencies = [
     "scipy>=1.16.3",
 ]
 
-[tool.setuptools.packages.find]
-where = ["src"]
+[tool.setuptools]
+package-dir = {"" = "src"}
+packages = ["control_toolbox"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+
+[dependency-groups]
+dev = [
+    "devtools>=0.12.2",
+    "pytest>=9.0.0",
+]
