@@ -25,6 +25,12 @@ from control_toolbox.tools.identification import (
     )
 import numpy as np
 
+# get fmu names
+fmu_names = get_fmu_names()
+print(fmu_names.model_dump_json(indent=2))
+print(80*"=")
+
+#get model desription
 md = get_model_description(fmu_name="PI_FOPDT")
 
 print(md.model_dump_json(indent=2))
