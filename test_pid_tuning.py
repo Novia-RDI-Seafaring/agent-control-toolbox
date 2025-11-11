@@ -29,8 +29,13 @@ from control_toolbox.tools.identification import (
     identify_fopdt_from_step,
     IdentificationProps,
     )
+from control_toolbox.tools.pid_tuning import (
+    zn_pid_tuning,
+    UltimateTuningProps,
+    UltimateGainParameters,
+    PIDParameters,
+    )
 import numpy as np
-
 
 ## get fmu names
 fmu_names = get_fmu_names()
@@ -64,8 +69,8 @@ simulation_props = SimulationStepResponseProps(
         output_interval=0.1,
         start_values={
             "mode": True,
-            "Kp": 1.728,
-            "Ti": 2.85,
+            "Kp": 3.84,
+            "Ti": float("inf"),
         }
     )
 
@@ -77,37 +82,61 @@ print("Simulated Step Response:")
 print(step_response.model_dump_json(indent=2))
 print(80*"=")
 
-#  find characteristic points
-characteristic_points = find_characteristic_points(data=step_response)
-print(80*"=")
-print("Characteristic Points:")
-print(characteristic_points.model_dump_json(indent=2))
-print(80*"=")
-
 # find peaks
-peaks = find_peaks(data=step_response, props=FindPeaksProps())
+peak_props = FindPeaksProps()
+peaks = find_peaks(data=step_response, props=peak_props)
 print(80*"=")
 print("Peaks:")
 print(peaks.model_dump_json(indent=2))
 print(80*"=")
 
-# find settling time
-settling_time = find_settling_time(data=step_response, props=SettlingTimeProps())
-print(80*"=")
-print("Settling Time:")
-print(settling_time.model_dump_json(indent=2))
-print(80*"=")
+# ultimate gain and period
+ultimate_gain_props = UltimateGainParameters(
+    Ku=3.84,
+    Pu=peaks.attributes[0].average_peak_period
+)
+ultimate_tuning_props = UltimateTuningProps(
+    params=ultimate_gain_props,
+    controller="pid",
+    method="classic"
+)
+# pid tuning
+methods = ["classic", "some_overshoot", "no_overshoot"]
 
-# find rise time
-rise_time = find_rise_time(data=step_response)
-print(80*"=")
-print("Rise Time:")
-print(rise_time.model_dump_json(indent=2))
-print(80*"=")
+for method in methods:
+    if method == "classic":
+        controller = "pi"
+        pid_parameters = zn_pid_tuning(
+            props=UltimateTuningProps(
+            params=ultimate_gain_props,
+            controller=controller,
+            method=method
+        )
+    )
+    elif method == "some_overshoot":
+        controller = "pid"
+        pid_parameters = zn_pid_tuning(
+            props=UltimateTuningProps(
+                params=ultimate_gain_props,
+                controller=controller,
+                method=method
+            )
+        )
 
-# find overshoot
-overshoot = find_overshoot(data=step_response)
-print(80*"=")
-print("Overshoot:")
-print(overshoot.model_dump_json(indent=2))
-print(80*"=")
+    elif method == "no_overshoot":
+        controller = "pid"
+        pid_parameters = zn_pid_tuning(
+                props=UltimateTuningProps(
+                params=ultimate_gain_props,
+                controller=controller,
+                method=method
+            )
+        )
+    else:
+        raise ValueError(f"Invalid method: {method}")
+
+    print(80*"=")
+    print(f"PID parameters for {method}:")
+    print(pid_parameters.model_dump_json(indent=2))
+    print(80*"=")
+
