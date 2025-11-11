@@ -26,8 +26,6 @@ from control_toolbox.tools.analysis import (
 from control_toolbox.tools.identification import (
     identify_fopdt_from_step,
     IdentificationProps,
-    xcorr_analysis,
-    XcorrProps
     )
 import numpy as np
 
@@ -80,9 +78,9 @@ print(80*"=")
 
 identification_props = IdentificationProps(
     output_name="y",
-    input_step_size=np.abs(step_props.final_value - step_props.initial_value),
-    method="tangent",
-    model="fopdt",
+    input_step_size=1.0,
+    input_step_time=0.1,
+    method="s-k"
 )
 identification = identify_fopdt_from_step(step_response, props=identification_props)
 print(80*"=")

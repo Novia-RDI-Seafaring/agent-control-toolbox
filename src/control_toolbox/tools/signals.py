@@ -79,7 +79,7 @@ class ImpulseProps(BaseModel):
 # TOOLS
 ########################################################
 
-def generate_step(step: StepProps) -> ResponseModel:
+def generate_step(step: StepProps) -> DataModel:
     """
     Generates a step signal at time = 0.0 + sampling_time.
     

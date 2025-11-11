@@ -178,7 +178,7 @@ def get_fmu_names() -> List[str]:
     names = [f.stem for f in fmu_dir.glob("*.fmu") if f.is_file()]
     return FMUNamesResponse(fmu_names=names)
 
-def get_model_description(fmu_name: str) -> ResponseModel:
+def get_model_description(fmu_name: str) -> ModelDescription:
     """Gets the model description of a specific FMU model.
 
     Args:

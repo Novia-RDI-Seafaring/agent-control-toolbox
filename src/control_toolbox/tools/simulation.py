@@ -169,7 +169,7 @@ def simulate(sim_props: SimulationProps) -> DataModel:
     
     return data_model
 
-def simulate_step_response(sim_props: SimulationStepResponseProps, step_props: StepProps) -> ResponseModel:
+def simulate_step_response(sim_props: SimulationStepResponseProps, step_props: StepProps) -> DataModel:
     """
     Simualtets a step reponse with input defined in the StepProps.
 
@@ -178,8 +178,7 @@ def simulate_step_response(sim_props: SimulationStepResponseProps, step_props: S
         step_props: StepProps containing the step signal properties.
         
     Returns:
-        DataModel: simulation results
-
+        DataModel: step response of the FMU model.
     **Purpose:**  
     Simulate a step response of a Functional Mock-up Unit (FMU) model using the specified parameters and input signals.
 
