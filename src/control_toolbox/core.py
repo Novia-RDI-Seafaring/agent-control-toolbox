@@ -38,6 +38,13 @@ class DataModel(BaseModel):
                 )
         return self
     
+    @classmethod
+    def to_teaser(cls) -> DataModelTeaser:
+        return DataModelTeaser(
+            timestamps=len(cls.timestamps),
+            signals=[s.name for s in cls.signals],
+            description=cls.description
+        )
 
 class AttributesGroup(BaseModel):
     title: str = Field(..., description="Title/name of the attribute group")

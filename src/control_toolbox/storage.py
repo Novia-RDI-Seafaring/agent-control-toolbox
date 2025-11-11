@@ -105,4 +105,3 @@ class ReprStore(Generic[T, ReprT]):
         _id = self.storage.store(data, sr.repr_id or id)
         sr.repr_id = _id
         return sr
-        
