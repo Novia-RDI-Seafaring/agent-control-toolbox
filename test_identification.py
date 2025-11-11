@@ -84,7 +84,7 @@ identification_props = IdentificationProps(
     method="tangent",
     model="fopdt",
 )
-identification = identify_fopdt_from_step(step_response.data, props=identification_props)
+identification = identify_fopdt_from_step(step_response, props=identification_props)
 print(80*"=")
 print("Identification:")
 print(identification.model_dump_json(indent=2))
