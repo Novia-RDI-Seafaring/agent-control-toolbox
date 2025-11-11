@@ -28,11 +28,14 @@ from control_toolbox.tools.analysis import (
 from control_toolbox.tools.identification import (
     identify_fopdt_from_step,
     IdentificationProps,
+    FOPDTModel,
     )
 from control_toolbox.tools.pid_tuning import (
     zn_pid_tuning,
     UltimateTuningProps,
     UltimateGainParameters,
+    lambda_tuning,
+    LambdaTuningProps,
     PIDParameters,
     )
 import numpy as np
@@ -140,3 +143,22 @@ for method in methods:
     print(pid_parameters.model_dump_json(indent=2))
     print(80*"=")
 
+
+    # lambda tuning
+    lambda_tuning_props = LambdaTuningProps(
+        controller="pi",
+        response="balanced"
+    )
+    pid_parameters = lambda_tuning(
+        model=FOPDTModel(
+            K=1.0,
+            L=1.0,
+            T=2.0,
+            description="Test model"
+        ),
+        props=lambda_tuning_props
+        )
+    print(80*"=")
+    print("Lambda tuning parameters:")
+    print(pid_parameters.model_dump_json(indent=2))
+    print(80*"=")

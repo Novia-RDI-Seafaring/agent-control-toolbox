@@ -4,6 +4,7 @@ from typing import List, Optional, Dict, Tuple, Union, Any
 from pydantic import BaseModel, Field
 from control_toolbox.core import DataModel, AttributesGroup
 from typing import Literal
+from control_toolbox.tools.identification import FOPDTModel
 
 ########################################################
 # SCHEMAS
@@ -67,3 +68,64 @@ def zn_pid_tuning(props: UltimateTuningProps) -> PIDParameters:
                 f"Unsupported controller/method combination: "
                 f"controller='{ctrl}', method='{method}'"
             )
+
+class LambdaTuningProps(BaseModel):
+    controller: Literal["pi"] = Field(default="pi", description="Controller type.")
+    response: Literal["aggressive", "balanced", "robust"] = Field(default="fast", description="Response type.")
+
+def lambda_tuning(model: FOPDTModel, props: LambdaTuningProps) -> PIDParameters:
+    """
+    SIMC (Skogestad) tuning for FOPDT: G(s) = K * exp(-L s) / (T s + 1).
+
+    - PI (small/moderate delay): 
+        Kp =  T / [ K (τc + L) ]
+        Ti =  min( T, 4(τc + L) )
+        Td =  0
+
+    lambda (closed-loop time constant) is a tuning parameter.
+
+    Args:
+        model: FOPDT model
+        props: Lambda tuning properties
+    
+    Returns:
+        PIDParameters: PID controller parameters (Kp, Ti, Td)
+
+    Usage: 
+        The tuning parameter lambda is selected based on the desired response ("agressive", "balanced", "robust").
+    """
+    K = float(model.K)
+    T = float(model.T)  # process time constant τ
+    L = float(model.L)  # dead time
+
+    if K == 0.0:
+        raise ValueError("Process gain K must be non-zero.")
+    if T <= 0.0:
+        raise ValueError("Time constant T must be positive.")
+    if L < 0.0:
+        raise ValueError("Dead time L cannot be negative.")
+
+    # --- choose lambda (closed-loop time constant) ---
+    resp = props.response
+    if resp == "aggressive":
+        lam = max(L, 0.5 * T)           # fast but still respects τc ≥ max{L, T/2}
+    elif resp == "balanced":
+        lam = max(T, L)                 # good default
+    elif resp == "robust":
+        lam = max(2 * T, T + 2 * L)     # conservative / noise-tolerant
+    else:
+        raise ValueError(f"Invalid response: {resp}")
+
+    # guard (numerical safety)
+    lam = max(lam, 1e-12)
+
+    # --- SIMC controller formulas ---
+    ctrl = props.controller
+    if ctrl == "pi":
+        Kp = T / (K * (lam + L))
+        Ti = min(T, 4 * (lam + L))
+        Td = 0.0
+    else:
+        raise ValueError(f"Invalid controller: {ctrl}")
+
+    return PIDParameters(Kp=Kp, Ti=Ti, Td=Td)
