@@ -2,7 +2,6 @@ from pathlib import Path
 from typing import Dict, List, Optional
 from fmpy import read_model_description
 from pydantic import BaseModel, Field
-from control_toolbox.core import ResponseModel, Source
 from control_toolbox.config import get_fmu_dir
 
 ########################################################
@@ -158,40 +157,42 @@ def _get_fmu_information(fmu_path: str) -> ModelDescription:
         simulation=simulation_description
     )
 
+class FMUNamesResponse(BaseModel):
+    fmu_names: List[str] = Field(description="List of available FMU model names")
+
 ########################################################
 # TOOLS
 ########################################################
 
-def get_fmu_names(fmu_dir: Optional[Path] = None) -> List[str]:
+def get_fmu_names() -> List[str]:
     """Lists all FMU models in the directory.
+       
     Returns:
-    List[str]: List of model names (without .fmu extension)
-    """
-    if fmu_dir is None:
-        fmu_dir = get_fmu_dir()
-    names = [f.stem for f in fmu_dir.glob("*.fmu") if f.is_file()]
-    return ResponseModel(
-        #source=Source(
-        #    tool_name="get_fmu_names",
-        #    arguments={"fmu_dir": fmu_dir}
-        #),
-        payload=names
-    )
+        fmu_names: List[str]: List of model names (without .fmu extension)
 
-def get_model_description(fmu_name: str, FMU_DIR: Optional[Path] = None) -> ResponseModel:
-    """Gets the model description of an FMU model.
-    Returns:
-    ModelDescription: Full FMU model description object
+    Purpose:
+        Get names of all available FMU simulation models.
     """
-    if FMU_DIR is None:
-        FMU_DIR = get_fmu_dir()
-    dir = str(FMU_DIR / f"{fmu_name}.fmu")
-    information = _get_fmu_information(dir)
-    return ResponseModel(
-        #source=Source(
-        #    tool_name="get_model_description",
-        #    arguments={"fmu_name": fmu_name}
-        #),
-        payload=information
-    )
+    fmu_dir = get_fmu_dir()
+    names = [f.stem for f in fmu_dir.glob("*.fmu") if f.is_file()]
+    return FMUNamesResponse(fmu_names=names)
+
+def get_model_description(fmu_name: str) -> ModelDescription:
+    """Gets the model description of a specific FMU model.
+
+    Args:
+        fmu_name: str: Name of the FMU model (without .fmu extension)
+       
+    Returns:
+        ModelDescription: The full model description object.
+
+    Purpose:
+        Get the model description of a model. Includes:
+            - FMUVariables: Variables defined in the FMU model (inputs, outputs, parameters)
+            - FMUMetadata: Metadata information about the FMU model
+            - FMUSimulationOptions: Default simulation options for the FMU model
+    """
+    fmu_dir = get_fmu_dir()
+    dir = str(fmu_dir / f"{fmu_name}.fmu")
+    return _get_fmu_information(dir)
 

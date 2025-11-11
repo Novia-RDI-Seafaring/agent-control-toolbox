@@ -2,7 +2,7 @@ import numpy as np
 from typing import Optional
 from control_toolbox.core import DataModel, Signal
 
-def ndarray_to_data_model(data: np.ndarray) -> DataModel:
+def ndarray_to_data_model(data: np.ndarray, description: Optional[str] = None) -> DataModel:
     """
     Convert a structured numpy array from FMPy into a DataModel.
 

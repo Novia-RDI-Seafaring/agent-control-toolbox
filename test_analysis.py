@@ -18,6 +18,8 @@ from control_toolbox.tools.analysis import (
     FindPeaksProps,
     SettlingTimeProps,
     find_settling_time,
+    find_rise_time,
+    find_overshoot,
     FirstCrossingProps,
     find_first_crossing,
     InflectionPointProps,
@@ -29,7 +31,8 @@ from control_toolbox.tools.identification import (
     )
 import numpy as np
 
-# get fmu names
+
+## get fmu names
 fmu_names = get_fmu_names()
 print(fmu_names.model_dump_json(indent=2))
 print(80*"=")
@@ -60,9 +63,9 @@ simulation_props = SimulationStepResponseProps(
         stop_time=20.0,
         output_interval=0.1,
         start_values={
-            "mode": False,
-            "Kp": 1.0,
-            "Ti": 1.0,
+            "mode": True,
+            "Kp": 1.728,
+            "Ti": 2.85,
         }
     )
 
@@ -74,17 +77,37 @@ print("Simulated Step Response:")
 print(step_response.model_dump_json(indent=2))
 print(80*"=")
 
-###
-
-identification_props = IdentificationProps(
-    output_name="y",
-    input_step_size=1.0,
-    input_step_time=0.1,
-    method="s-k"
-)
-identification = identify_fopdt_from_step(step_response, props=identification_props)
+#  find characteristic points
+characteristic_points = find_characteristic_points(data=step_response)
 print(80*"=")
-print("Identification:")
-print(identification.model_dump_json(indent=2))
+print("Characteristic Points:")
+print(characteristic_points.model_dump_json(indent=2))
 print(80*"=")
 
+# find peaks
+peaks = find_peaks(data=step_response, props=FindPeaksProps())
+print(80*"=")
+print("Peaks:")
+print(peaks.model_dump_json(indent=2))
+print(80*"=")
+
+# find settling time
+settling_time = find_settling_time(data=step_response, props=SettlingTimeProps())
+print(80*"=")
+print("Settling Time:")
+print(settling_time.model_dump_json(indent=2))
+print(80*"=")
+
+# find rise time
+rise_time = find_rise_time(data=step_response)
+print(80*"=")
+print("Rise Time:")
+print(rise_time.model_dump_json(indent=2))
+print(80*"=")
+
+# find overshoot
+overshoot = find_overshoot(data=step_response)
+print(80*"=")
+print("Overshoot:")
+print(overshoot.model_dump_json(indent=2))
+print(80*"=")
