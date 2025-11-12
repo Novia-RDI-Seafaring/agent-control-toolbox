@@ -164,35 +164,49 @@ class FMUNamesResponse(BaseModel):
 # TOOLS
 ########################################################
 
-def get_fmu_names() -> List[str]:
-    """Lists all FMU models in the directory.
-       
-    Returns:
-        fmu_names: List[str]: List of model names (without .fmu extension)
-
-    Purpose:
-        Get names of all available FMU simulation models.
+def get_fmu_names(fmu_dir: str) -> FMUNamesResponse:
     """
-    fmu_dir = get_fmu_dir()
-    names = [f.stem for f in fmu_dir.glob("*.fmu") if f.is_file()]
-    return FMUNamesResponse(fmu_names=names)
-
-def get_model_description(fmu_name: str) -> ModelDescription:
-    """Gets the model description of a specific FMU model.
+    List all FMU models in the given directory.
 
     Args:
-        fmu_name: str: Name of the FMU model (without .fmu extension)
+        fmu_dir (str): Path to the directory containing the FMU models.
        
     Returns:
-        ModelDescription: The full model description object.
+        List[str]: List of model names (without the '.fmu' extension).
 
     Purpose:
-        Get the model description of a model. Includes:
-            - FMUVariables: Variables defined in the FMU model (inputs, outputs, parameters)
-            - FMUMetadata: Metadata information about the FMU model
-            - FMUSimulationOptions: Default simulation options for the FMU model
+        Retrieve the names of all available FMU simulation models.
     """
-    fmu_dir = get_fmu_dir()
-    dir = str(fmu_dir / f"{fmu_name}.fmu")
-    return _get_fmu_information(dir)
+    fmu_dir = Path(fmu_dir)
+
+    if not fmu_dir.exists() or not fmu_dir.is_dir():
+        raise FileNotFoundError(f"Invalid FMU directory: {fmu_dir}")
+
+    fmu_names = [f.stem for f in fmu_dir.glob("*.fmu") if f.is_file()]
+    return FMUNamesResponse(fmu_names=fmu_names)
+
+def get_model_description(fmu_path: str) -> ModelDescription:
+    """
+    Get the model description of a specific FMU model.
+
+    Args:
+        fmu_path (str): Path to the FMU file. Must end with '.fmu'.
+
+    Returns:
+        ModelDescription: The FMU model description object.
+
+    Purpose:
+        Retrieve metadata, variables, and default options from the FMU model.
+    """
+    fmu_path = Path(fmu_path)
+
+    # Check file extension
+    if not fmu_path.suffix.lower() == ".fmu":
+        raise ValueError(f"Invalid file extension: {fmu_path.name}. Expected a '.fmu' file.")
+
+    # Check file existence
+    if not fmu_path.exists():
+        raise FileNotFoundError(f"FMU file not found: {fmu_path}")
+
+    return _get_fmu_information(fmu_path)
 
