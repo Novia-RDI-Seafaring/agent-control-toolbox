@@ -19,7 +19,7 @@ def plot_data(data: DataModel) -> Dict[str, Figure]:
         data: DataModel containing timestamps and signals to plot
     
     Returns:
-        List of FigureModel objects, one for each signal
+        Dictionary mapping signal names to matplotlib figure objects
     """
     # Configure plot style
     plt.rcParams.update({
@@ -43,7 +43,7 @@ def plot_data(data: DataModel) -> Dict[str, Figure]:
     if num_signals == 0:
         raise ValueError("DataModel has no signals to plot")
 
-    figures = []
+    figures: Dict[str, Figure] = {}
     
     for s in data.signals:
         # Create a new figure for each signal
@@ -60,7 +60,7 @@ def plot_data(data: DataModel) -> Dict[str, Figure]:
         plt.tight_layout(pad=0.1)
         
         # Create FigureModel and append to list
-        figures.append(fig)
+        figures[s.name] = fig
     
     return figures
 
