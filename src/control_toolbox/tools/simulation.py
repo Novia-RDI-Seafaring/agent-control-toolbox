@@ -116,11 +116,12 @@ def plotly_simulation(data: DataModel):
 ########################################################
 # TOOLS
 ########################################################
-def simulate(sim_props: SimulationProps) -> DataModel:
+def simulate(fmu_path: str, sim_props: SimulationProps) -> DataModel:
     """
     Simualtets with input defined in the SimulationProps.
 
     Args:
+        fmu_path: str: Path to the FMU file. Must end with '.fmu'.
         sim_props: SimulationProps containing the simulation parameters
 
     Returns:
@@ -134,15 +135,20 @@ def simulate(sim_props: SimulationProps) -> DataModel:
     - Ensure that you have set all parameters correctly in the `start_values` dictionary before simulating.
 
     """
+    fmu_path = Path(fmu_path)
 
-    fmu_dir = get_fmu_dir()
-    fmu_path = fmu_dir / f"{sim_props.fmu_name}.fmu"
+    # Check file extension
+    if not fmu_path.suffix.lower() == ".fmu":
+        raise ValueError(f"Invalid file extension: {fmu_path.name}. Expected a '.fmu' file.")
 
+    # Check file existence
+    if not fmu_path.exists():
+        raise FileNotFoundError(f"FMU file not found: {fmu_path}")
+
+    # check start values
     if sim_props.start_values is None:
         sim_props.start_values = {}
     
-    if not fmu_path.is_file():
-        raise FileNotFoundError(f"FMU not found: {fmu_path}")
 
     # Convert DataModel input to numpy array if provided and not empty
     input_array = None
@@ -169,11 +175,12 @@ def simulate(sim_props: SimulationProps) -> DataModel:
     
     return data_model
 
-def simulate_step_response(sim_props: SimulationStepResponseProps, step_props: StepProps) -> DataModel:
+def simulate_step_response(fmu_path: str, sim_props: SimulationStepResponseProps, step_props: StepProps) -> DataModel:
     """
     Simualtets a step reponse with input defined in the StepProps.
 
     Args:
+        fmu_path: str: Path to the FMU file. Must end with '.fmu'.
         sim_props: SimulationStepResponseProps containing the simulation parameters.
         step_props: StepProps containing the step signal properties.
         
@@ -187,6 +194,15 @@ def simulate_step_response(sim_props: SimulationStepResponseProps, step_props: S
     - Ensure that you have set all parameters correctly in the `start_values` dictionary before simulating.
 
     """
+    fmu_path = Path(fmu_path)
+    
+    # Check file extension
+    if not fmu_path.suffix.lower() == ".fmu":
+        raise ValueError(f"Invalid file extension: {fmu_path.name}. Expected a '.fmu' file.")
+
+    # Check file existence
+    if not fmu_path.exists():
+        raise FileNotFoundError(f"FMU file not found: {fmu_path}")
 
     # generate inputs
     input_step = generate_step(step_props)
@@ -200,7 +216,7 @@ def simulate_step_response(sim_props: SimulationStepResponseProps, step_props: S
         output_interval=sim_props.output_interval,
         start_values=sim_props.start_values
     )
-    data_model = simulate(sim_props)
+    data_model = simulate(fmu_path, sim_props)
     data_model.description = f"""
     Simulated step response of {sim_props.fmu_name} in time interval [{sim_props.start_time}, {sim_props.stop_time}].
     A step from {step_props.initial_value} to {step_props.final_value} happens at t={step_props.time_range.start + step_props.time_range.sampling_time}.
