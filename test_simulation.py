@@ -1,5 +1,7 @@
 from control_toolbox.tools.simulation import simulate, simulate_step_response, SimulationProps, SimulationStepResponseProps
 from control_toolbox.tools.signals import StepProps, TimeRange
+from control_toolbox.tools.plotting import plot_data
+
 FMU_DIR = "models/fmus/"
 FMU_PATH = "models/fmus/PI_FOPDT_3.fmu"
 
@@ -29,3 +31,8 @@ step_props = StepProps(
 results = simulate_step_response(fmu_path=FMU_PATH, sim_props=sim_props, step_props=step_props)
 print(results.model_dump_json(indent=2))
 print(80*"=")
+
+
+# plot
+from control_toolbox.tools.plotting import plot_data
+plot_data(results).show()

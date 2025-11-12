@@ -28,8 +28,7 @@ def plot_data(data: DataModel, show: bool = True) -> Figure:
         "ytick.labelsize": 10,
         "legend.fontsize": 10,
         "lines.linewidth": 1.2,
-        "axes.grid": True,
-        "grid.alpha": 0.3,
+        "axes.grid": False,
         "figure.dpi": 300,                  # High-resolution figure
         "savefig.dpi": 300,                 # Publication quality when saving
     })
@@ -51,8 +50,8 @@ def plot_data(data: DataModel, show: bool = True) -> Figure:
         values = np.array(s.values)
         ax.plot(timestamps, values, label=s.name, color='black')
         ax.set_ylabel("value")
-        ax.grid(True)
         ax.legend(loc='best')
+        ax.margins(x=0)  # Remove x-axis margins to make x-axis tight, keep y-axis margins
 
     # Set xlabel on the last axis
     if num_signals == 1:
@@ -91,3 +90,4 @@ if __name__ == "__main__":
     results = simulate_step_response(fmu_path=FMU_PATH, sim_props=simulation_props, step_props=step_props)
 
     plot_data(results)
+
