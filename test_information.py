@@ -1,4 +1,5 @@
 from control_toolbox.tools.information import get_fmu_names, get_model_description
+from pathlib import Path
 
 FMU_DIR = "models/fmus/"
 FMU_PATH = "models/fmus/PI_FOPDT_3.fmu"

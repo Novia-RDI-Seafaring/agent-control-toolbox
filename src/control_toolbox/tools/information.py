@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Union
 from fmpy import read_model_description
 from pydantic import BaseModel, Field
 from control_toolbox.config import get_fmu_dir
@@ -75,7 +75,7 @@ def _get_default_simulation_options(md):
         step_size=step_size
     )
 
-def _get_fmu_information(fmu_path: str) -> ModelDescription:
+def _get_fmu_information(fmu_path: Union[str, Path]) -> ModelDescription:
     """
     Reads the FMU at fmu_path and returns a ModelDescription object
     containing variables, metadata, and simulation settings.
@@ -164,12 +164,12 @@ class FMUNamesResponse(BaseModel):
 # TOOLS
 ########################################################
 
-def get_fmu_names(fmu_dir: str) -> FMUNamesResponse:
+def get_fmu_names(fmu_folder: Union[str,Path]) -> FMUNamesResponse:
     """
     List all FMU models in the given directory.
 
     Args:
-        fmu_dir (str): Path to the directory containing the FMU models.
+        fmu_folder (str): Path to the directory containing the FMU models.
        
     Returns:
         List[str]: List of model names (without the '.fmu' extension).
@@ -177,15 +177,17 @@ def get_fmu_names(fmu_dir: str) -> FMUNamesResponse:
     Purpose:
         Retrieve the names of all available FMU simulation models.
     """
-    fmu_dir = Path(fmu_dir)
+    
+    if not isinstance(fmu_folder, Path):
+        fmu_folder = Path(fmu_folder)
 
-    if not fmu_dir.exists() or not fmu_dir.is_dir():
-        raise FileNotFoundError(f"Invalid FMU directory: {fmu_dir}")
+    if not fmu_folder.exists() or not fmu_folder.is_dir():
+        raise FileNotFoundError(f"Invalid FMU directory: {fmu_folder}")
 
-    fmu_names = [f.stem for f in fmu_dir.glob("*.fmu") if f.is_file()]
+    fmu_names = [f.stem for f in fmu_folder.glob("*.fmu") if f.is_file()]
     return FMUNamesResponse(fmu_names=fmu_names)
 
-def get_model_description(fmu_path: str) -> ModelDescription:
+def get_model_description(fmu_path: Union[str, Path]) -> ModelDescription:
     """
     Get the model description of a specific FMU model.
 
@@ -198,7 +200,8 @@ def get_model_description(fmu_path: str) -> ModelDescription:
     Purpose:
         Retrieve metadata, variables, and default options from the FMU model.
     """
-    fmu_path = Path(fmu_path)
+    if not isinstance(fmu_path, Path):
+        fmu_path = Path(fmu_path)
 
     # Check file extension
     if not fmu_path.suffix.lower() == ".fmu":

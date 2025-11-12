@@ -110,7 +110,7 @@ def plotly_simulation(data: DataModel):
 ########################################################
 # TOOLS
 ########################################################
-def simulate(fmu_path: str, sim_props: SimulationProps) -> DataModel:
+def simulate(fmu_path: Union[str, Path], sim_props: SimulationProps) -> DataModel:
     """
     Simualtets with input defined in the SimulationProps.
 
@@ -129,7 +129,8 @@ def simulate(fmu_path: str, sim_props: SimulationProps) -> DataModel:
     - Ensure that you have set all parameters correctly in the `start_values` dictionary before simulating.
 
     """
-    fmu_path = Path(fmu_path)
+    if not isinstance(fmu_path, Path):
+        fmu_path = Path(fmu_path)
 
     # Check file extension
     if not fmu_path.suffix.lower() == ".fmu":
@@ -169,7 +170,7 @@ def simulate(fmu_path: str, sim_props: SimulationProps) -> DataModel:
     
     return data_model
 
-def simulate_step_response(fmu_path: str, sim_props: SimulationStepResponseProps, step_props: StepProps) -> DataModel:
+def simulate_step_response(fmu_path: Union[str, Path], sim_props: SimulationStepResponseProps, step_props: StepProps) -> DataModel:
     """
     Simualtets a step reponse with input defined in the StepProps.
 
@@ -188,7 +189,8 @@ def simulate_step_response(fmu_path: str, sim_props: SimulationStepResponseProps
     - Ensure that you have set all parameters correctly in the `start_values` dictionary before simulating.
 
     """
-    fmu_path = Path(fmu_path)
+    if not isinstance(fmu_path, Path):
+        fmu_path = Path(fmu_path)
 
     # Check file extension
     if not fmu_path.suffix.lower() == ".fmu":
