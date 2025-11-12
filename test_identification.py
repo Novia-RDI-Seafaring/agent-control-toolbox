@@ -34,7 +34,7 @@ FMU_PATH = "models/fmus/PI_FOPDT_3.fmu"
 
 
 # get fmu names
-fmu_names = get_fmu_names(fmu_dir=FMU_DIR)
+fmu_names = get_fmu_names(fmu_folder=FMU_DIR)
 print(fmu_names.model_dump_json(indent=2))
 print(80*"=")
 
