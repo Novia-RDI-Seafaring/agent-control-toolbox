@@ -40,13 +40,16 @@ from control_toolbox.tools.pid_tuning import (
     )
 import numpy as np
 
+FMU_DIR = "models/fmus/"
+FMU_PATH = "models/fmus/PI_FOPDT_3.fmu"
+
 ## get fmu names
-fmu_names = get_fmu_names()
+fmu_names = get_fmu_names(fmu_dir=FMU_DIR)
 print(fmu_names.model_dump_json(indent=2))
 print(80*"=")
 
 #get model desription
-md = get_model_description(fmu_name="PI_FOPDT")
+md = get_model_description(fmu_path=FMU_PATH)
 
 print(md.model_dump_json(indent=2))
 print(80*"=")
@@ -66,7 +69,6 @@ print(80*"=")
 
 # Create simulation properties
 simulation_props = SimulationStepResponseProps(
-        fmu_name="PI_FOPDT",
         start_time=0.0,
         stop_time=20.0,
         output_interval=0.1,
@@ -78,7 +80,7 @@ simulation_props = SimulationStepResponseProps(
     )
 
 # simulate step response
-step_response = simulate_step_response(sim_props=simulation_props, step_props=step_props)
+step_response = simulate_step_response(fmu_path=FMU_PATH, sim_props=simulation_props, step_props=step_props)
 
 print(80*"=")
 print("Simulated Step Response:")

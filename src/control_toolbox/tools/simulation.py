@@ -13,9 +13,6 @@ from control_toolbox.tools.signals import generate_step, StepProps
 # SCHEMAS
 ########################################################
 class SimulationProps(BaseModel):
-    fmu_name: str = Field(
-        description="Name of the FMU model to simulate"
-    )
     start_time: Optional[Union[float, str]] = Field(
         default=0.0,
         description="Simulation start time"
@@ -50,9 +47,6 @@ class SimulationProps(BaseModel):
     )
 
 class SimulationStepResponseProps(BaseModel):
-    fmu_name: str = Field(
-        description="Name of the FMU model to simulate"
-    )
     start_time: Optional[Union[float, str]] = Field(
         default=0.0,
         description="Simulation start time"
@@ -170,7 +164,7 @@ def simulate(fmu_path: str, sim_props: SimulationProps) -> DataModel:
 
     data_model = ndarray_to_data_model(
         data=results,
-        description=f"Simulation results for {sim_props.fmu_name} with input {sim_props.input.description}"
+        description=f"Simulation results for FMU in {fmu_path} with input {sim_props.input.description}"
         )
     
     return data_model
@@ -195,7 +189,7 @@ def simulate_step_response(fmu_path: str, sim_props: SimulationStepResponseProps
 
     """
     fmu_path = Path(fmu_path)
-    
+
     # Check file extension
     if not fmu_path.suffix.lower() == ".fmu":
         raise ValueError(f"Invalid file extension: {fmu_path.name}. Expected a '.fmu' file.")
@@ -208,7 +202,6 @@ def simulate_step_response(fmu_path: str, sim_props: SimulationStepResponseProps
     input_step = generate_step(step_props)
 
     sim_props = SimulationProps(
-        fmu_name=sim_props.fmu_name,
         start_time=sim_props.start_time,
         stop_time=sim_props.stop_time,
         input=input_step,
@@ -218,7 +211,7 @@ def simulate_step_response(fmu_path: str, sim_props: SimulationStepResponseProps
     )
     data_model = simulate(fmu_path, sim_props)
     data_model.description = f"""
-    Simulated step response of {sim_props.fmu_name} in time interval [{sim_props.start_time}, {sim_props.stop_time}].
+    Simulated step response of FMU in {fmu_path} in time interval [{sim_props.start_time}, {sim_props.stop_time}].
     A step from {step_props.initial_value} to {step_props.final_value} happens at t={step_props.time_range.start + step_props.time_range.sampling_time}.
     """
 
