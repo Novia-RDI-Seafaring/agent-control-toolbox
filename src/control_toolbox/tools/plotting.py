@@ -3,19 +3,39 @@ from control_toolbox.tools.signals import StepProps, TimeRange
 from control_toolbox.core import DataModel
 import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
+from typing import List
 import numpy as np
+from pydantic import BaseModel, Field, ConfigDict
 
+########################################################
+# SCHEMAS
+########################################################
 
-def plot_data(data: DataModel, show: bool = True) -> Figure:
+class FigureModel(BaseModel):
+    """
+    Pydantic model containing a matplotlib figure with its name.
+    """
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
+    name: str = Field(..., description="Name of the figure")
+    figure: Figure = Field(..., description="Matplotlib figure object")
+
+########################################################
+# HELPERS FUNCTIONS
+########################################################
+
+########################################################
+# TOOLS
+########################################################
+def plot_data(data: DataModel) -> List[FigureModel]:
     """
     Plots a DataModel.
     
     Args:
         data: DataModel containing timestamps and signals to plot
-        show: Whether to display the plot (default: True)
     
     Returns:
-        matplotlib figure object
+        List of FigureModel objects, one for each signal
     """
     # Configure plot style
     plt.rcParams.update({
@@ -39,34 +59,28 @@ def plot_data(data: DataModel, show: bool = True) -> Figure:
     if num_signals == 0:
         raise ValueError("DataModel has no signals to plot")
 
-    # Handle single subplot case (plt.subplots returns single Axes, not array)
-    if num_signals == 1:
-        fig, ax = plt.subplots(1, 1, figsize=(8, 3), sharex=True)
-        axes = [ax]
-    else:
-        fig, axes = plt.subplots(num_signals, 1, figsize=(8, 3 * num_signals), sharex=True)
-
-    for ax, s in zip(axes, data.signals):
+    figures = []
+    
+    for s in data.signals:
+        # Create a new figure for each signal
+        fig, ax = plt.subplots(1, 1, figsize=(8, 3))
+        
         values = np.array(s.values)
         ax.plot(timestamps, values, label=s.name, color='black')
         ax.set_ylabel("value")
+        ax.set_xlabel("Time")
         ax.legend(loc='best')
         ax.margins(x=0)  # Remove x-axis margins to make x-axis tight, keep y-axis margins
-
-    # Set xlabel on the last axis
-    if num_signals == 1:
-        axes[0].set_xlabel("Time")
-    else:
-        axes[-1].set_xlabel("Time")
+        
+        # Layout adjustments
+        plt.tight_layout(pad=0.1)
+        
+        # Create FigureModel and append to list
+        figures.append(
+            FigureModel(name=s.name, figure=fig)
+            )
     
-    # --- Layout adjustments ---
-    plt.tight_layout(pad=0.1)
-    plt.subplots_adjust(hspace=0.05)  # minimal vertical space
-
-    if show:
-        plt.show()
-    
-    return fig
+    return figures
 
 if __name__ == "__main__":
     FMU_PATH = "models/fmus/PI_FOPDT_3.fmu"
@@ -89,5 +103,6 @@ if __name__ == "__main__":
     )
     results = simulate_step_response(fmu_path=FMU_PATH, sim_props=simulation_props, step_props=step_props)
 
-    plot_data(results)
+    figures = plot_data(results)
+    plt.show()
 
