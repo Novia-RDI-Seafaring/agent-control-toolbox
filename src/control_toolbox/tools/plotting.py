@@ -6,28 +6,12 @@ from matplotlib.figure import Figure
 from typing import List
 import numpy as np
 from pydantic import BaseModel, Field, ConfigDict
-
-########################################################
-# SCHEMAS
-########################################################
-
-class FigureModel(BaseModel):
-    """
-    Pydantic model containing a matplotlib figure with its name.
-    """
-    model_config = ConfigDict(arbitrary_types_allowed=True)
-
-    name: str = Field(..., description="Name of the figure")
-    figure: Figure = Field(..., description="Matplotlib figure object")
-
-########################################################
-# HELPERS FUNCTIONS
-########################################################
+from typing import Dict
 
 ########################################################
 # TOOLS
 ########################################################
-def plot_data(data: DataModel) -> List[FigureModel]:
+def plot_data(data: DataModel) -> Dict[str, Figure]:
     """
     Plots a DataModel.
     
@@ -76,9 +60,7 @@ def plot_data(data: DataModel) -> List[FigureModel]:
         plt.tight_layout(pad=0.1)
         
         # Create FigureModel and append to list
-        figures.append(
-            FigureModel(name=s.name, figure=fig)
-            )
+        figures.append(fig)
     
     return figures
 

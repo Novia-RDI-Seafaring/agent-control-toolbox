@@ -35,4 +35,3 @@ print(80*"=")
 
 # plot
 from control_toolbox.tools.plotting import plot_data
-plot_data(results).show()
