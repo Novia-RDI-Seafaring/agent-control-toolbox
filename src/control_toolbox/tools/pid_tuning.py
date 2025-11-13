@@ -73,10 +73,6 @@ def zn_pid_tuning(props: UltimateTuningProps) -> PIDParameters:
 
     Important:
         - Raises ValueError for unsupported controller/method combinations
-        - Classic tuning formulas: P (Kp=0.5Ku), PI (Kp=0.45Ku, Ti=Pu/1.2), PD (Kp=0.8Ku, Td=Pu/8), PID (Kp=0.6Ku, Ti=Pu/2, Td=Pu/8)
-        - Some overshoot: PID with Kp=Ku/3, Ti=Pu/2, Td=Pu/3
-        - No overshoot: PID with Kp=0.2Ku, Ti=Pu/2, Td=Pu/3
-        - Method variations (some_overshoot, no_overshoot) only apply to PID controllers
     """
     Ku, Pu = props.params.Ku, props.params.Pu
     ctrl, method = props.controller, props.method

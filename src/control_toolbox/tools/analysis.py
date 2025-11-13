@@ -357,8 +357,8 @@ def find_characteristic_points(data: DataModel) -> AttributesGroup:
 
     Args:
         data (DataModel):
-            DataModel containing timestamps and signals from a step response.
-            Assumes signals represent step responses with initial and final values.
+            DataModel containing timestamps and signals from a step response. 
+            Assumes signals represent step responses.
 
     Returns:
         AttributesGroup:
@@ -531,7 +531,7 @@ def find_settling_time(data: DataModel, props: SettlingTimeProps) -> AttributesG
     Args:
         data (DataModel):
             DataModel containing timestamps and signals to analyze. Assumes signals
-            represent transient responses approaching steady-state values.
+            represent transient responses.
         props (SettlingTimeProps):
             Properties for settling time calculation:
             - tolerance: Percentage tolerance band (default 0.02 = 2%) around steady-state value
