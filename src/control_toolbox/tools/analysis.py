@@ -1,6 +1,6 @@
 import numpy as np
 from scipy.signal import find_peaks as scipy_find_peaks
-from typing import List, Optional, Dict, Tuple, Union, Literal
+from typing import List, Optional, Dict, Tuple, Union, Literal, Any
 from pydantic import BaseModel, Field
 from control_toolbox.core import DataModel, AttributesGroup, Signal
 
@@ -89,13 +89,39 @@ class FindPeaksProps(BaseModel):
         )
     )
 
+class Peaks(BaseModel):
+    timestamps: List[float] = Field(..., description="Timestamps of detected peaks.")
+    values: List[float] = Field(..., description="Values at detected peaks.")
+
 class PeakAttributes(BaseModel):
     signal_name: str = Field(..., description="Name of the signal.")
-    timestamps: List[float] = Field(..., description="List of timestamps in the signal.")
-    peak_values: List[float] = Field(..., description="List of values in the signal.")
-    average_peak_period: float = Field(..., description="Average period of the peaks")
-    properties: Dict[str, Union[float, List[float]]] = Field(..., description="Properties of the peaks")
+    peaks: Peaks = Field(..., description="Detected peaks (timestamps and values).")
+    average_peak_period: Optional[float] = Field(
+        default=None, description="Average period between peaks (None if <2 peaks)."
+    )
+    properties: Dict[str, Any] = Field(
+        default_factory=dict, description="scipy.signal.find_peaks properties."
+    )
 
+class TrendModel(BaseModel):
+    signal_name: str = Field(..., description="Name of the signal.")
+    slope: float = Field(..., description="Slope of the trend.")
+    intercept: float = Field(..., description="Intercept of the trend.")
+    status: Literal["increasing", "decreasing", "constant"] = Field(
+        ..., description="Trend of the signal, i.e., is it increasing, decreasing, or constant."
+    )
+    description: Optional[str] = Field(
+        default=None, description="Description of the trend."
+    )
+
+class OscillationAnalysisAttributes(BaseModel):
+    signal_name: str = Field(..., description="Name of the signal.")
+    peaks: Peaks = Field(..., description="Detected peaks (timestamps and values).")
+    average_peak_period: Optional[float] = Field(
+        default=None, description="Average period between peaks (None if <2 peaks)."
+    )
+    trend: TrendModel = Field(..., description="Trend of the peak amplitudes.")
+    description: Optional[str] = Field(default=None, description="Per-signal summary.")
 
 class FirstCrossingProps(BaseModel):
     signal_name: str = Field(..., description="Name of the signal.")
@@ -133,10 +159,6 @@ class Overshoot(BaseModel):
     max_value: float = Field(..., description="Maximum overshoot of the signal.")
     percent: float = Field(..., description="Percentage of the overshoot relative to steady state value.")
     description: str = Field(..., description="Description of the overshoot. The overshoot is the maximum deviation from the steady-state value after 90% of the change is reached.")
-
-class Peaks(BaseModel):
-    timestamps: List[float] = Field(..., description="Timestamps of detected peaks.")
-    values: List[float] = Field(..., description="Values at detected peaks.")
 
 ########################################################
 # HELPER FUNCTIONS
@@ -368,61 +390,58 @@ def find_characteristic_points(data: DataModel) -> AttributesGroup:
 
 def find_peaks(data: DataModel, props: FindPeaksProps) -> AttributesGroup:
     """
-    Find peaks inside a signal based on peak properties.
-
-    This function takes DataModel and finds all local maxima by simple comparison of neighboring values.
-    Optionally, a subset of these peaks can be selected by specifying conditions for a peak's properties.
+    Find peaks inside each signal based on scipy.signal.find_peaks and
+    return an AttributesGroup with per-signal PeakAttributes.
     """
     t = np.asarray(data.timestamps, dtype=float)
 
-    peak_attributes = []
+    peak_attributes: List[PeakAttributes] = []
     for signal in data.signals:
         x = np.asarray(signal.values, dtype=float)
-        peaks, properties = scipy_find_peaks(x, height=props.height, threshold=props.threshold, distance=props.distance, prominence=props.prominence, width=props.width, wlen=props.wlen, rel_height=props.rel_height, plateau_size=props.plateau_size)
-    
-        peak_timestamps = [t[p] for p in peaks]
-        peak_values = [x[p] for p in peaks]
 
-        if len(peak_timestamps) >= 2:
-            average_peak_period = float(np.mean(np.diff(peak_timestamps)))
-        else:
-            # If less than 2 peaks, set period to NaN or 0
-            average_peak_period = float("nan")
-        
-        # Convert numpy arrays to lists for serialization
-        properties_serializable = {}
+        peaks_idx, properties = scipy_find_peaks(
+            x,
+            height=props.height,
+            threshold=props.threshold,
+            distance=props.distance,
+            prominence=props.prominence,
+            width=props.width,
+            wlen=props.wlen,
+            rel_height=props.rel_height,
+            plateau_size=props.plateau_size,
+        )
+
+        peak_timestamps = [float(t[i]) for i in peaks_idx]
+        peak_values = [float(x[i]) for i in peaks_idx]
+
+        # Average peak period (None if fewer than 2 peaks)
+        avg_period: Optional[float] = (
+            float(np.mean(np.diff(peak_timestamps))) if len(peak_timestamps) >= 2 else None
+        )
+
+        # Make scipy properties JSON-serializable
+        properties_serializable: Dict[str, Any] = {}
         for key, value in properties.items():
             if isinstance(value, np.ndarray):
-                properties_serializable[key] = value.tolist()
+                properties_serializable[key] = value.astype(float).tolist()
+            elif isinstance(value, (np.floating, float, int)):
+                properties_serializable[key] = float(value)
             else:
-                properties_serializable[key] = float(value) if isinstance(value, (int, float, np.number)) else value
-        
-        peak_attributes.append(PeakAttributes(
-            signal_name=signal.name,
-            timestamps=peak_timestamps,
-            peak_values=peak_values,
-            average_peak_period=average_peak_period,
-            properties=properties_serializable
-        ))
+                properties_serializable[key] = value
 
-    # collect results in attribute groups
-    peaks_attribute_group = AttributesGroup(
+        peak_attributes.append(
+            PeakAttributes(
+                signal_name=signal.name,
+                peaks=Peaks(timestamps=peak_timestamps, values=peak_values),
+                average_peak_period=avg_period,
+                properties=properties_serializable,
+            )
+        )
+
+    return AttributesGroup(
         title="Peak-detection results",
         attributes=peak_attributes,
-        description=f"Detected peaks in all signals"
-    )
-                
-    return peaks_attribute_group
-
-class TrendModel(BaseModel):
-    signal_name: str = Field(..., description="Name of the signal.")
-    slope: float = Field(..., description="Slope of the trend.")
-    intercept: float = Field(..., description="Intercept of the trend.")
-    status: Literal["increasing", "decreasing", "constant"] = Field(
-        ..., description="Trend of the signal, i.e., is it increasing, decreasing, or constant."
-    )
-    description: Optional[str] = Field(
-        default=None, description="Description of the trend."
+        description="Detected peaks in all signals.",
     )
 
 import warnings
@@ -490,46 +509,52 @@ def find_trend(data: DataModel, threshold: float = 0.02) -> List[TrendModel]:
 
     return results
 
-class OscillationAnalysisAttributes(BaseModel):
-    signal_name: str = Field(..., description="Name of the signal.")
-    peaks: Peaks = Field(..., description="Detected peaks (timestamps and values).")
-    average_peak_period: Optional[float] = Field(
-        default=None, description="Average period between peaks (None if <2 peaks)."
-    )
-    trend: TrendModel = Field(..., description="Trend of the peak amplitudes.")
-    description: Optional[str] = Field(default=None, description="Per-signal summary.")
-
-
 def oscillation_analysis(data: DataModel) -> AttributesGroup:
     """
     Analyzes oscillations in a time series dataset:
       - Detects peaks per signal
-      - Computes average peak period
-      - Computes trend of peak amplitudes
+      - Uses average peak period from peak detection (if available)
+      - Computes trend of peak amplitudes (linear regression on peak values)
       - Packages per-signal results into OscillationAnalysisAttributes
       - Returns an AttributesGroup(title, attributes, description)
     """
     peak_result = find_peaks(data, props=FindPeaksProps())
     per_signal_attrs: List[OscillationAnalysisAttributes] = []
 
-    # For each signal, build a mini DataModel with peak values to run trend
     for idx, s in enumerate(data.signals):
         peak_attr = peak_result.attributes[idx]  # assumes same ordering
-        t_peaks = np.asarray(peak_attr.timestamps, dtype=float)
-        v_peaks = np.asarray(peak_attr.peak_values, dtype=float)
 
-        # Average peak period
-        avg_period: Optional[float] = None
+        # NEW STRUCTURE: peaks.timestamps / peaks.values
+        t_peaks = np.asarray(peak_attr.peaks.timestamps, dtype=float)
+        v_peaks = np.asarray(peak_attr.peaks.values, dtype=float)
+
+        # Average peak period: use provided value if present; otherwise compute
+        if getattr(peak_attr, "average_peak_period", None) is not None:
+            avg_period: Optional[float] = float(peak_attr.average_peak_period)
+        else:
+            avg_period = float(np.mean(np.diff(t_peaks))) if t_peaks.size >= 2 else None
+
+        # Build a mini DataModel for trend on peak amplitudes (requires ≥2 samples)
         if t_peaks.size >= 2:
-            avg_period = float(np.mean(np.diff(t_peaks)))
-
-        # Trend on peak amplitudes (use a modest threshold; peaks can be noisier)
-        peaks_data = DataModel(
-            timestamps=t_peaks.tolist(),
-            signals=[Signal(name=s.name, values=v_peaks.tolist(), description=f"Detected peaks for '{s.name}'")],
-            description=f"Peaks extracted from '{s.name}'",
-        )
-        peak_trend = find_trend(peaks_data, threshold=0.05)[0]
+            peaks_data = DataModel(
+                timestamps=t_peaks.tolist(),
+                signals=[Signal(
+                    name=s.name,
+                    values=v_peaks.tolist(),
+                    description=f"Detected peaks for '{s.name}'"
+                )],
+                description=f"Peaks extracted from '{s.name}'",
+            )
+            peak_trend = find_trend(peaks_data, threshold=0.05)[0]
+        else:
+            # Fallback when we don't have enough peaks to regress
+            peak_trend = TrendModel(
+                signal_name=s.name,
+                slope=0.0,
+                intercept=float(v_peaks[0]) if v_peaks.size == 1 else 0.0,
+                status="constant",
+                description=f"Insufficient peaks ({v_peaks.size}) to assess amplitude trend reliably.",
+            )
 
         trend_to_behavior = {
             "increasing": "growing",
@@ -537,8 +562,12 @@ def oscillation_analysis(data: DataModel) -> AttributesGroup:
             "constant": "sustained",
         }
         behavior = trend_to_behavior[peak_trend.status]
+
+        # Refine trend description
         peak_trend.description = (
-            f"Signal '{s.name}' exhibits *{behavior}* oscillations with peak-slope {peak_trend.slope:.4}."
+            f"The detected peak amplitudes of signal '{s.name}' are {peak_trend.status}. "
+            f"Thus it exhibits *{behavior}* oscillations. "
+            f"(peak slope {peak_trend.slope:.4g})"
         )
 
         per_signal_attrs.append(
@@ -548,8 +577,9 @@ def oscillation_analysis(data: DataModel) -> AttributesGroup:
                 average_peak_period=avg_period,
                 trend=peak_trend,
                 description=(
-                    f"Signal {s.name}: {len(v_peaks)} peaks detected; {behavior} oscillations;"
-                    f"{'avg peak-to-peak period=' + f'{avg_period:.6g}' if avg_period is not None else 'avg period unavailable'}."
+                    f"{s.name}: {len(v_peaks)} peaks; "
+                    f"{'avg period=' + f'{avg_period:.6g}' if avg_period is not None else 'avg period unavailable'}; "
+                    f"peak trend={peak_trend.status}."
                 ),
             )
         )
