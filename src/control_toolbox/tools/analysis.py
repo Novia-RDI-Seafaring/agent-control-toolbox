@@ -653,6 +653,10 @@ def oscillation_analysis(data: DataModel) -> AttributesGroup:
             - peaks: Peaks object containing timestamps and values of detected peaks
             - average_peak_period: Average time between consecutive peaks (None if <2 peaks)
             - trend: TrendModel describing the trend of peak amplitudes (increasing, decreasing, or constant)
+                - slope: Slope of the trend (None if undetermined)
+                - intercept: Intercept of the trend (None if undetermined)
+                - status: Status of the trend (increasing, decreasing, constant, or undetermined)
+                - description: Description of the trend. **IMPORTANT** for determining the ultimate gain and period of a system.
             - description: Per-signal summary of oscillation characteristics
     """
     peak_result = find_peaks(data, props=FindPeaksProps())
