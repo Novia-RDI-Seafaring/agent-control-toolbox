@@ -1,6 +1,7 @@
 from pathlib import Path
 from typing import Dict, List, Optional, Union
 from fmpy import simulate_fmu as fmpy_simulate_fmu
+from fmpy import read_model_description as fmpy_read_model_description
 from pydantic import BaseModel, Field
 from typing import Any
 
@@ -188,6 +189,11 @@ def simulate(fmu_path: Union[str, Path], sim_props: SimulationProps) -> DataMode
     if sim_props.input is not None and hasattr(sim_props.input, 'timestamps') and sim_props.input.timestamps:
         input_array = data_model_to_ndarray(sim_props.input)
 
+    # model description
+    md = fmpy_read_model_description(str(fmu_path))
+
+    output_variables = [v.name for v in md.modelVariables if v.causality == 'output']
+
     results = fmpy_simulate_fmu(
         filename=str(fmu_path),
         start_time=sim_props.start_time,
@@ -197,7 +203,8 @@ def simulate(fmu_path: Union[str, Path], sim_props: SimulationProps) -> DataMode
         input=input_array,
         output_interval=sim_props.output_interval,
         apply_default_start_values=True,
-        record_events=True
+        record_events=True,
+        output=output_variables # returns all output variables
     )
 
     data_model = ndarray_to_data_model(
