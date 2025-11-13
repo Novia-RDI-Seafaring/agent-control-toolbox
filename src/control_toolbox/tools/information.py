@@ -172,16 +172,6 @@ def get_fmu_names(fmu_folder: Union[str,Path]) -> FMUNamesResponse:
     their names without the file extension. This enables discovery of available
     simulation models in a workspace or model library.
 
-    Args:
-        fmu_folder (Union[str, Path]):
-            Path to the directory containing FMU model files. Must be a valid
-            directory path, otherwise raises FileNotFoundError.
-
-    Returns:
-        FMUNamesResponse:
-            Contains a list of FMU model names (file stems without '.fmu' extension)
-            found in the specified directory.
-
     Purpose:
         Enable discovery and enumeration of available FMU simulation models in a
         workspace. Essential for building model selection interfaces and automated
@@ -192,6 +182,16 @@ def get_fmu_names(fmu_folder: Union[str,Path]) -> FMUNamesResponse:
         - Only files with '.fmu' extension are included in results
         - Returns file stems (names without extension), not full paths
         - Empty list is returned if no FMU files are found in the directory
+
+    Args:
+        fmu_folder (Union[str, Path]):
+            Path to the directory containing FMU model files. Must be a valid
+            directory path, otherwise raises FileNotFoundError.
+
+    Returns:
+        FMUNamesResponse:
+            Contains a list of FMU model names (file stems without '.fmu' extension)
+            found in the specified directory.
     """
     
     if not isinstance(fmu_folder, Path):
@@ -212,6 +212,19 @@ def get_model_description(fmu_path: Union[str, Path]) -> ModelDescription:
     This provides complete structural information about the model for analysis and
     simulation setup.
 
+    Purpose:
+        Extract complete structural and metadata information from FMU models to
+        enable automated simulation setup, parameter discovery, and model analysis.
+        Essential for understanding model capabilities and configuring simulations
+        without manual inspection of FMU files.
+
+    Important:
+        - FMU file must exist and have '.fmu' extension, otherwise raises FileNotFoundError or ValueError
+        - Uses FMPy's read_model_description to parse FMU XML metadata
+        - Variable values are converted to floats with safe fallbacks for missing data
+        - Default simulation options are extracted from FMU's defaultExperiment if available
+        - Returns empty strings for missing metadata fields
+
     Args:
         fmu_path (Union[str, Path]):
             Path to the FMU file. Must end with '.fmu' extension and file must exist,
@@ -225,19 +238,6 @@ def get_model_description(fmu_path: Union[str, Path]) -> ModelDescription:
             - variables: FMUVariables with lists of inputs, outputs, and parameters
             - metadata: FMUMetadata with FMI version, author, license, etc.
             - simulation: FMUSimulationOptions with default start/stop times, tolerance, step size
-
-    Purpose:
-        Extract complete structural and metadata information from FMU models to
-        enable automated simulation setup, parameter discovery, and model analysis.
-        Essential for understanding model capabilities and configuring simulations
-        without manual inspection of FMU files.
-
-    Important:
-        - FMU file must exist and have '.fmu' extension, otherwise raises FileNotFoundError or ValueError
-        - Uses FMPy's read_model_description to parse FMU XML metadata
-        - Variable values are converted to floats with safe fallbacks for missing data
-        - Default simulation options are extracted from FMU's defaultExperiment if available
-        - Returns empty strings for missing metadata fields
     """
     if not isinstance(fmu_path, Path):
         fmu_path = Path(fmu_path)

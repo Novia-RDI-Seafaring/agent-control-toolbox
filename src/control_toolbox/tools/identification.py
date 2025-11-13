@@ -61,6 +61,21 @@ def identify_fopdt_from_step(data: DataModel, props: IdentificationProps) -> FOP
     function analyzes the output signal response to a known step input, extracting
     characteristic points to compute model parameters analytically.
 
+    Purpose:
+        Extract simplified FOPDT models from step response data for controller tuning
+        and system analysis. FOPDT models are widely used in process control because
+        they capture essential dynamics (gain, delay, time constant) while remaining
+        simple enough for analytical controller design methods.
+
+    Important:
+        - Signal specified in output_name must exist in data, otherwise raises ValueError
+        - Method must be one of: "tangent" (inflection point), "smith" (28%/63% points), "s-k" (35%/85% points)
+        - System gain K is calculated as output_step_change / input_step_size
+        - Dead time L and time constant T depend on the chosen identification method
+        - Tangent method uses inflection point and tangent line intersection
+        - Smith method uses 28.3% and 63.2% response points
+        - S-K method uses 35.3% and 85.3% response points
+
     Args:
         data (DataModel):
             DataModel containing step response data with timestamps and output signals.
@@ -80,21 +95,6 @@ def identify_fopdt_from_step(data: DataModel, props: IdentificationProps) -> FOP
             - L: Dead time (time delay)
             - T: Time constant
             - description: Detailed description of the identification method and results
-
-    Purpose:
-        Extract simplified FOPDT models from step response data for controller tuning
-        and system analysis. FOPDT models are widely used in process control because
-        they capture essential dynamics (gain, delay, time constant) while remaining
-        simple enough for analytical controller design methods.
-
-    Important:
-        - Signal specified in output_name must exist in data, otherwise raises ValueError
-        - Method must be one of: "tangent" (inflection point), "smith" (28%/63% points), "s-k" (35%/85% points)
-        - System gain K is calculated as output_step_change / input_step_size
-        - Dead time L and time constant T depend on the chosen identification method
-        - Tangent method uses inflection point and tangent line intersection
-        - Smith method uses 28.3% and 63.2% response points
-        - S-K method uses 35.3% and 85.3% response points
     """
     
     y = None

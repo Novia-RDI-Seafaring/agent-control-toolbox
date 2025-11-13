@@ -88,6 +88,18 @@ def generate_step(step: StepProps) -> DataModel:
     at critical timestamps (start, step time, and end) to minimize data size
     while maintaining correct behavior in simulations.
 
+    Purpose:
+        Generate standardized step input signals for control system testing and
+        simulation. Step signals are fundamental test inputs used to characterize
+        system dynamics, generate step responses, and evaluate controller performance.
+
+    Important:
+        - Step transition occurs at time = time_range.start + time_range.sampling_time
+        - Signal is defined only at three points: start, step time, and stop (minimal representation)
+        - Signal name must match input variable name in FMU models when used for simulation
+        - Timestamps are in ascending order and values list matches timestamps length
+        - The minimal representation is sufficient for FMU simulation as it defines signal only where changes occur
+
     Args:
         step (StepProps):
             Step signal properties including:
@@ -101,18 +113,6 @@ def generate_step(step: StepProps) -> DataModel:
             Step signal containing timestamps and a single signal. The signal
             maintains initial_value until time_range.start + sampling_time,
             then transitions to final_value and remains constant until stop time.
-
-    Purpose:
-        Generate standardized step input signals for control system testing and
-        simulation. Step signals are fundamental test inputs used to characterize
-        system dynamics, generate step responses, and evaluate controller performance.
-
-    Important:
-        - Step transition occurs at time = time_range.start + time_range.sampling_time
-        - Signal is defined only at three points: start, step time, and stop (minimal representation)
-        - Signal name must match input variable name in FMU models when used for simulation
-        - Timestamps are in ascending order and values list matches timestamps length
-        - The minimal representation is sufficient for FMU simulation as it defines signal only where changes occur
     """
     t_start = step.time_range.start
     t_stop = step.time_range.stop

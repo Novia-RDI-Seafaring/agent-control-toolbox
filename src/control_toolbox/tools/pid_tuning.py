@@ -51,6 +51,15 @@ def zn_pid_tuning(props: UltimateTuningProps) -> PIDParameters:
     multiple controller types (P, PI, PD, PID) and tuning variations (classic,
     some overshoot, no overshoot) for different performance requirements.
 
+    Purpose:
+        Provide systematic PID controller tuning based on closed-loop oscillation
+        characteristics. The Ziegler-Nichols method is a classic empirical tuning
+        approach that uses ultimate gain and period to determine controller parameters
+        for acceptable closed-loop performance.
+
+    Important:
+        - Raises ValueError for unsupported controller/method combinations
+
     Args:
         props (UltimateTuningProps):
             Tuning properties including:
@@ -64,15 +73,6 @@ def zn_pid_tuning(props: UltimateTuningProps) -> PIDParameters:
             - Kp: Proportional gain
             - Ti: Integral time (infinity disables integral action)
             - Td: Derivative time (0 disables derivative action)
-
-    Purpose:
-        Provide systematic PID controller tuning based on closed-loop oscillation
-        characteristics. The Ziegler-Nichols method is a classic empirical tuning
-        approach that uses ultimate gain and period to determine controller parameters
-        for acceptable closed-loop performance.
-
-    Important:
-        - Raises ValueError for unsupported controller/method combinations
     """
     Ku, Pu = props.params.Ku, props.params.Pu
     ctrl, method = props.controller, props.method
@@ -109,6 +109,19 @@ def lambda_tuning(model: FOPDTModel, props: LambdaTuningProps) -> PIDParameters:
     time constant (lambda). The method balances performance and robustness by selecting
     lambda based on process characteristics and desired response type.
 
+    Purpose:
+        Provide model-based PID controller tuning that explicitly considers process
+        dynamics and desired closed-loop performance. SIMC tuning offers a systematic
+        approach to balancing speed of response with robustness, making it suitable
+        for process control applications with FOPDT models.
+
+    Important:
+        - Raises ValueError if process gain K is zero, time constant T is non-positive, or dead time L is negative
+        - Lambda selection: aggressive (max(L, 0.5*T)), balanced (max(T, L)), robust (max(2*T, T+2*L))
+        - Currently only supports PI controllers (controller must be "pi")
+        - Lambda is constrained to be at least 1e-12 for numerical safety
+        - Integral time is limited to min(T, 4*(lambda+L)) to prevent excessive integral action
+
     Args:
         model (FOPDTModel):
             FOPDT model containing process parameters:
@@ -126,19 +139,6 @@ def lambda_tuning(model: FOPDTModel, props: LambdaTuningProps) -> PIDParameters:
             - Kp: Proportional gain = T / [K * (lambda + L)]
             - Ti: Integral time = min(T, 4 * (lambda + L))
             - Td: Derivative time = 0 (no derivative action)
-
-    Purpose:
-        Provide model-based PID controller tuning that explicitly considers process
-        dynamics and desired closed-loop performance. SIMC tuning offers a systematic
-        approach to balancing speed of response with robustness, making it suitable
-        for process control applications with FOPDT models.
-
-    Important:
-        - Raises ValueError if process gain K is zero, time constant T is non-positive, or dead time L is negative
-        - Lambda selection: aggressive (max(L, 0.5*T)), balanced (max(T, L)), robust (max(2*T, T+2*L))
-        - Currently only supports PI controllers (controller must be "pi")
-        - Lambda is constrained to be at least 1e-12 for numerical safety
-        - Integral time is limited to min(T, 4*(lambda+L)) to prevent excessive integral action
     """
     K = float(model.K)
     T = float(model.T)  # process time constant τ

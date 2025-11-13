@@ -19,16 +19,6 @@ def plot_data(data: DataModel) -> Dict[str, Figure]:
     creating separate figures for each signal with time on the x-axis and signal values
     on the y-axis. Figures are configured with high-resolution settings and tight layout.
 
-    Args:
-        data (DataModel):
-            DataModel containing timestamps and signals to plot. Must contain at least
-            one signal, otherwise raises ValueError.
-
-    Returns:
-        Dict[str, Figure]:
-            Dictionary mapping signal names to matplotlib Figure objects. Each figure
-            contains a single subplot with the signal plotted as a black line.
-
     Purpose:
         Provide static, publication-quality visualization of control system data for
         analysis, reports, and documentation. Matplotlib figures are suitable for
@@ -41,6 +31,16 @@ def plot_data(data: DataModel) -> Dict[str, Figure]:
         - X-axis margins are removed (tight), y-axis margins are preserved
         - Figures use black lines with serif fonts (Times New Roman family)
         - Each figure is 8x3 inches in size
+
+    Args:
+        data (DataModel):
+            DataModel containing timestamps and signals to plot. Must contain at least
+            one signal, otherwise raises ValueError.
+
+    Returns:
+        Dict[str, Figure]:
+            Dictionary mapping signal names to matplotlib Figure objects. Each figure
+            contains a single subplot with the signal plotted as a black line.
     """
     # Configure plot style
     plt.rcParams.update({
