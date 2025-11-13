@@ -23,7 +23,8 @@ from control_toolbox.tools.analysis import (
     FirstCrossingProps,
     find_first_crossing,
     InflectionPointProps,
-    find_inflection_point
+    find_inflection_point,
+    oscillation_analysis
     )
 from control_toolbox.tools.identification import (
     identify_fopdt_from_step,
@@ -66,8 +67,8 @@ simulation_props = SimulationStepResponseProps(
         output_interval=0.1,
         start_values={
             "mode": True,
-            "Kp": 1.728,
-            "Ti": 2.85,
+            "Kp": 3.84,
+            "Ti": float("inf"),
         }
     )
 
@@ -91,6 +92,13 @@ peaks = find_peaks(data=step_response, props=FindPeaksProps())
 print(80*"=")
 print("Peaks:")
 print(peaks.model_dump_json(indent=2))
+print(80*"=")
+
+# find oscillation analysis
+oscillation_analysis = oscillation_analysis(data=step_response)
+print(80*"=")
+print("Oscillation Analysis:")
+print(oscillation_analysis.model_dump_json(indent=2))
 print(80*"=")
 
 # find settling time
