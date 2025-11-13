@@ -621,12 +621,39 @@ def find_trend(data: DataModel, threshold: float = 0.02) -> List[TrendModel]:
 
 def oscillation_analysis(data: DataModel) -> AttributesGroup:
     """
-    Analyzes oscillations in a time series dataset:
-      - Detects peaks per signal
-      - Uses average peak period from peak detection (if available)
-      - Computes trend of peak amplitudes (linear regression on peak values)
-      - Packages per-signal results into OscillationAnalysisAttributes
-      - Returns an AttributesGroup(title, attributes, description)
+    Analyzes oscillations in time series signals.
+
+    Performs analysis by detecting peaks in each signal, computing average peak periods, 
+    and analyzing the trend of peak amplitudes over time. Uses peak detection to identify oscillatory behavior 
+    and linear regression on detected peak values to characterize whether oscillations are growing, decaying, or sustained.
+    Results are packaged per signal with detailed oscillation characteristics.
+
+    Purpose:
+        Identify and characterize oscillatory behavior in control system responses.
+        Essential for stability analysis, detecting unwanted oscillations, and
+        understanding system dynamics. Useful for determining the ultimate gain and period of a systemm when tning PID controllers. 
+        Helps diagnose control loop performance issues and assess whether oscillations are stable, growing, or decaying over time.
+
+    Important:
+        - Uses default peak detection parameters (no filtering criteria applied)
+        - Average peak period is None if fewer than 2 peaks are detected per signal
+        - Peak amplitude trend requires at least 2 peaks; otherwise defaults to "constant"
+        - Trend classification uses 5% threshold for constant vs. increasing/decreasing
+        - Oscillation behavior is classified as: growing (increasing), decaying (decreasing), or sustained (constant)
+
+    Args:
+        data (DataModel):
+            DataModel containing timestamps and signals to analyze for oscillations.
+            All signals in the data model will be analyzed.
+
+    Returns:
+        AttributesGroup:
+            Contains OscillationAnalysisAttributes objects for each signal with:
+            - signal_name: Name of the analyzed signal
+            - peaks: Peaks object containing timestamps and values of detected peaks
+            - average_peak_period: Average time between consecutive peaks (None if <2 peaks)
+            - trend: TrendModel describing the trend of peak amplitudes (increasing, decreasing, or constant)
+            - description: Per-signal summary of oscillation characteristics
     """
     peak_result = find_peaks(data, props=FindPeaksProps())
     per_signal_attrs: List[OscillationAnalysisAttributes] = []
