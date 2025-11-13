@@ -29,10 +29,6 @@ class SimulationProps(BaseModel):
         default=None,
         description="DataModel containing input signals"
     )
-    output: Optional[List[str]] = Field(
-        default=None,
-        description="Sequence of output variable names to record"
-    )
     output_interval: Union[float, str] = Field(
         default=None,
         description="Interval for sampling the output. Must be integer multiple of FMU models internal step size."
@@ -54,10 +50,6 @@ class SimulationStepResponseProps(BaseModel):
     stop_time: Optional[Union[float, str]] = Field(
         default=1.0,
         description="Simulation stop time"
-    )
-    output: Optional[List[str]] = Field(
-        default=None,
-        description="Sequence of output variable names to record"
     )
     output_interval: Union[float, str] = Field(
         default=None,
@@ -204,7 +196,6 @@ def simulate(fmu_path: Union[str, Path], sim_props: SimulationProps) -> DataMode
         step_size=sim_props.step_size,
         start_values=sim_props.start_values,
         input=input_array,
-        output=sim_props.output,
         output_interval=sim_props.output_interval,
         apply_default_start_values=True,
         record_events=True
@@ -277,7 +268,6 @@ def simulate_step_response(fmu_path: Union[str, Path], sim_props: SimulationStep
         start_time=sim_props.start_time,
         stop_time=sim_props.stop_time,
         input=input_step,
-        output=sim_props.output,
         output_interval=sim_props.output_interval,
         start_values=sim_props.start_values
     )
