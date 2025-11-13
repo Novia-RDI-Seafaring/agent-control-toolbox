@@ -44,8 +44,35 @@ class PIDParameters(BaseModel):
 
 def zn_pid_tuning(props: UltimateTuningProps) -> PIDParameters:
     """
-    Compute PID controller parameters using the Ziegler-Nichols closed-loop
-    (also called ultimate gain or continuous-cycling) tuning method.
+    Computes PID controller parameters using Ziegler-Nichols closed-loop tuning method.
+
+    Calculates PID controller gains (Kp, Ti, Td) based on ultimate gain (Ku) and
+    ultimate period (Pu) obtained from closed-loop oscillation experiments. Supports
+    multiple controller types (P, PI, PD, PID) and tuning variations (classic,
+    some overshoot, no overshoot) for different performance requirements.
+
+    Args:
+        props (UltimateTuningProps):
+            Tuning properties including:
+            - params: UltimateGainParameters with Ku (ultimate gain) and Pu (ultimate period)
+            - controller: Controller type - "p", "pi", "pd", or "pid"
+            - method: Tuning method - "classic", "some_overshoot", or "no_overshoot" (PID only)
+
+    Returns:
+        PIDParameters:
+            PID controller parameters in ideal form:
+            - Kp: Proportional gain
+            - Ti: Integral time (infinity disables integral action)
+            - Td: Derivative time (0 disables derivative action)
+
+    Purpose:
+        Provide systematic PID controller tuning based on closed-loop oscillation
+        characteristics. The Ziegler-Nichols method is a classic empirical tuning
+        approach that uses ultimate gain and period to determine controller parameters
+        for acceptable closed-loop performance.
+
+    Important:
+        - Raises ValueError for unsupported controller/method combinations
     """
     Ku, Pu = props.params.Ku, props.params.Pu
     ctrl, method = props.controller, props.method
@@ -75,24 +102,43 @@ class LambdaTuningProps(BaseModel):
 
 def lambda_tuning(model: FOPDTModel, props: LambdaTuningProps) -> PIDParameters:
     """
-    SIMC (Skogestad) tuning for FOPDT: G(s) = K * exp(-L s) / (T s + 1).
+    Computes PID controller parameters using SIMC (Skogestad IMC) lambda tuning method.
 
-    - PI (small/moderate delay): 
-        Kp =  T / [ K (τc + L) ]
-        Ti =  min( T, 4(τc + L) )
-        Td =  0
-
-    lambda (closed-loop time constant) is a tuning parameter.
+    Calculates PI controller parameters for FOPDT models using the SIMC tuning rules,
+    which provide a systematic approach to controller design based on desired closed-loop
+    time constant (lambda). The method balances performance and robustness by selecting
+    lambda based on process characteristics and desired response type.
 
     Args:
-        model: FOPDT model
-        props: Lambda tuning properties
-    
-    Returns:
-        PIDParameters: PID controller parameters (Kp, Ti, Td)
+        model (FOPDTModel):
+            FOPDT model containing process parameters:
+            - K: Process gain (must be non-zero)
+            - T: Process time constant (must be positive)
+            - L: Dead time (must be non-negative)
+        props (LambdaTuningProps):
+            Lambda tuning properties including:
+            - controller: Controller type (currently only "pi" supported)
+            - response: Response type - "aggressive", "balanced", or "robust"
 
-    Usage: 
-        The tuning parameter lambda is selected based on the desired response ("agressive", "balanced", "robust").
+    Returns:
+        PIDParameters:
+            PI controller parameters:
+            - Kp: Proportional gain = T / [K * (lambda + L)]
+            - Ti: Integral time = min(T, 4 * (lambda + L))
+            - Td: Derivative time = 0 (no derivative action)
+
+    Purpose:
+        Provide model-based PID controller tuning that explicitly considers process
+        dynamics and desired closed-loop performance. SIMC tuning offers a systematic
+        approach to balancing speed of response with robustness, making it suitable
+        for process control applications with FOPDT models.
+
+    Important:
+        - Raises ValueError if process gain K is zero, time constant T is non-positive, or dead time L is negative
+        - Lambda selection: aggressive (max(L, 0.5*T)), balanced (max(T, L)), robust (max(2*T, T+2*L))
+        - Currently only supports PI controllers (controller must be "pi")
+        - Lambda is constrained to be at least 1e-12 for numerical safety
+        - Integral time is limited to min(T, 4*(lambda+L)) to prevent excessive integral action
     """
     K = float(model.K)
     T = float(model.T)  # process time constant τ
