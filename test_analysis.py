@@ -67,7 +67,7 @@ simulation_props = SimulationStepResponseProps(
         output_interval=0.1,
         start_values={
             "mode": True,
-            "Kp": 3.84,
+            "Kp": 0.1,
             "Ti": float("inf"),
         }
     )

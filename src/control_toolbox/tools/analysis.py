@@ -105,9 +105,9 @@ class PeakAttributes(BaseModel):
 
 class TrendModel(BaseModel):
     signal_name: str = Field(..., description="Name of the signal.")
-    slope: float = Field(..., description="Slope of the trend.")
-    intercept: float = Field(..., description="Intercept of the trend.")
-    status: Literal["increasing", "decreasing", "constant"] = Field(
+    slope: Optional[float] = Field(default=None, description="Slope of the trend (None if undetermined).")
+    intercept: Optional[float] = Field(default=None, description="Intercept of the trend (None if undetermined).")
+    status: Literal["increasing", "decreasing", "constant", "undetermined"] = Field(
         ..., description="Trend of the signal, i.e., is it increasing, decreasing, or constant."
     )
     description: Optional[str] = Field(
@@ -687,9 +687,9 @@ def oscillation_analysis(data: DataModel) -> AttributesGroup:
             # Fallback when we don't have enough peaks to regress
             peak_trend = TrendModel(
                 signal_name=s.name,
-                slope=0.0,
-                intercept=float(v_peaks[0]) if v_peaks.size == 1 else 0.0,
-                status="constant",
+                slope=None,
+                intercept=None,
+                status="undetermined",
                 description=f"Insufficient peaks ({v_peaks.size}) to assess amplitude trend reliably.",
             )
 
@@ -697,15 +697,20 @@ def oscillation_analysis(data: DataModel) -> AttributesGroup:
             "increasing": "growing",
             "decreasing": "decaying",
             "constant": "sustained",
+            "undetermined": "undetermined",
         }
         behavior = trend_to_behavior[peak_trend.status]
 
         # Refine trend description
-        peak_trend.description = (
-            f"The detected peak amplitudes of signal '{s.name}' are {peak_trend.status}. "
-            f"Thus it exhibits *{behavior}* oscillations. "
-            f"(peak slope {peak_trend.slope:.4g})"
-        )
+        if peak_trend.status != "undetermined":
+            peak_trend.description = (
+                f"The detected peak amplitudes of signal '{s.name}' are {peak_trend.status}. "
+                f"Thus it exhibits *{behavior}* oscillations. "
+                f"(peak slope {peak_trend.slope:.4g})"
+            )
+        else:
+            peak_trend.description = f"The detected peak amplitudes of signal '{s.name}' are {peak_trend.status}. "
+            f"Insufficient peaks ({v_peaks.size}) to assess amplitude trend."
 
         per_signal_attrs.append(
             OscillationAnalysisAttributes(
