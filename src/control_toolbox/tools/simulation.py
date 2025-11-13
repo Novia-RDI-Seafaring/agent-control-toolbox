@@ -78,6 +78,34 @@ class SimulationStepResponseProps(BaseModel):
 import plotly.graph_objs as go
 
 def plotly_simulation(data: DataModel):
+    """
+    Creates Plotly figures for simulation data visualization.
+
+    Generates interactive Plotly line plots for each signal in a DataModel, creating
+    separate figures for each signal with time on the x-axis and signal values on
+    the y-axis. Figures are formatted with white plotly template for clean presentation.
+
+    Args:
+        data (DataModel):
+            DataModel containing timestamps and signals to visualize.
+
+    Returns:
+        List[FigureModel]:
+            List of FigureModel objects, one for each signal. Each figure contains
+            a Plotly figure specification (as dictionary) and a caption describing
+            the signal being plotted.
+
+    Purpose:
+        Provide interactive visualization of simulation results for analysis and
+        presentation. Plotly figures enable zooming, panning, and interactive
+        exploration of control system responses.
+
+    Important:
+        - Creates a separate figure for each signal in the DataModel
+        - Uses plotly_white template for consistent styling
+        - X-axis is labeled "Time (seconds)", y-axis uses signal name
+        - Figures are returned as FigureModel objects with Plotly dict specifications
+    """
     timestamps = data.timestamps
     signals = data.signals
 
@@ -112,22 +140,41 @@ def plotly_simulation(data: DataModel):
 ########################################################
 def simulate(fmu_path: Union[str, Path], sim_props: SimulationProps) -> DataModel:
     """
-    Simualtets with input defined in the SimulationProps.
+    Simulates a Functional Mock-up Unit (FMU) model with specified inputs and parameters.
+
+    Executes a time-domain simulation of an FMU model using FMPy, allowing custom
+    input signals, parameter values, and simulation settings. The function handles
+    conversion between DataModel format and numpy arrays required by FMPy.
 
     Args:
-        fmu_path: str: Path to the FMU file. Must end with '.fmu'.
-        sim_props: SimulationProps containing the simulation parameters
+        fmu_path (Union[str, Path]):
+            Path to the FMU file. Must end with '.fmu' extension and file must exist.
+        sim_props (SimulationProps):
+            Simulation configuration including:
+            - start_time: Simulation start time (default 0.0)
+            - stop_time: Simulation stop time (default 1.0)
+            - step_size: Internal simulation step size (must be integer multiple of FMU step size)
+            - input: DataModel containing input signals (optional)
+            - output: List of output variable names to record (optional, records all if None)
+            - output_interval: Sampling interval for output (must be integer multiple of FMU step size)
+            - start_values: Dictionary of initial parameter and input values (optional)
 
     Returns:
-        DataModel: simulation results
+        DataModel:
+            Simulation results containing timestamps and output signals. Description
+            includes information about the FMU path and input signals used.
 
-    **Purpose:**  
-    Run a time-domain simulation of a Functional Mock-up Unit (FMU) model using the specified parameters and input signals.
+    Purpose:
+        Enable time-domain simulation of control system models defined as FMU files.
+        Essential for testing controller designs, analyzing system behavior, and
+        generating step responses or other test signals for system identification.
 
-    **Important:**
-    - Ensure that the output `output_interval` and the signal `sampling_time` are integer multiples of the FMU model step size (default 0.1).
-    - Ensure that you have set all parameters correctly in the `start_values` dictionary before simulating.
-
+    Important:
+        - FMU file must exist and have '.fmu' extension, otherwise raises FileNotFoundError or ValueError
+        - output_interval and input signal sampling_time must be integer multiples of FMU internal step size (default 0.1)
+        - All parameters must be set correctly in start_values dictionary before simulating
+        - Input DataModel is converted to structured numpy array format required by FMPy
+        - Uses apply_default_start_values=True and record_events=True for comprehensive simulation
     """
     if not isinstance(fmu_path, Path):
         fmu_path = Path(fmu_path)
@@ -172,22 +219,45 @@ def simulate(fmu_path: Union[str, Path], sim_props: SimulationProps) -> DataMode
 
 def simulate_step_response(fmu_path: Union[str, Path], sim_props: SimulationStepResponseProps, step_props: StepProps) -> DataModel:
     """
-    Simualtets a step reponse with input defined in the StepProps.
+    Simulates a step response of a Functional Mock-up Unit (FMU) model.
+
+    Generates a step input signal and runs a simulation to obtain the step response
+    of an FMU model. This is a convenience function that combines step signal generation
+    with simulation execution, commonly used for control system analysis and tuning.
 
     Args:
-        fmu_path: str: Path to the FMU file. Must end with '.fmu'.
-        sim_props: SimulationStepResponseProps containing the simulation parameters.
-        step_props: StepProps containing the step signal properties.
-        
+        fmu_path (Union[str, Path]):
+            Path to the FMU file. Must end with '.fmu' extension and file must exist.
+        sim_props (SimulationStepResponseProps):
+            Simulation configuration including:
+            - start_time: Simulation start time (default 0.0)
+            - stop_time: Simulation stop time (default 1.0)
+            - output: List of output variable names to record (optional)
+            - output_interval: Sampling interval for output (must be integer multiple of FMU step size)
+            - start_values: Dictionary of initial parameter and input values (optional)
+        step_props (StepProps):
+            Step signal properties including:
+            - signal_name: Name of the input signal (default "input")
+            - time_range: TimeRange with start, stop, and sampling_time
+            - initial_value: Initial value before step (default 0.0)
+            - final_value: Final value after step (default 1.0)
+
     Returns:
-        DataModel: step response of the FMU model.
-    **Purpose:**  
-    Simulate a step response of a Functional Mock-up Unit (FMU) model using the specified parameters and input signals.
+        DataModel:
+            Step response results containing timestamps and output signals. Description
+            includes information about step timing and magnitude.
 
-    **Important:**
-    - Ensure that the output `output_interval` and the signal `sampling_time` are integer multiples of the FMU model step size (default 0.1).
-    - Ensure that you have set all parameters correctly in the `start_values` dictionary before simulating.
+    Purpose:
+        Generate standardized step responses for control system analysis, controller
+        tuning, and system identification. Step responses are fundamental test signals
+        used to characterize system dynamics and evaluate controller performance.
 
+    Important:
+        - FMU file must exist and have '.fmu' extension, otherwise raises FileNotFoundError or ValueError
+        - output_interval and step signal sampling_time must be integer multiples of FMU internal step size (default 0.1)
+        - All parameters must be set correctly in start_values dictionary before simulating
+        - Step occurs at time = time_range.start + time_range.sampling_time
+        - The generated step signal is automatically passed to the simulate function
     """
     if not isinstance(fmu_path, Path):
         fmu_path = Path(fmu_path)

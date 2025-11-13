@@ -166,16 +166,32 @@ class FMUNamesResponse(BaseModel):
 
 def get_fmu_names(fmu_folder: Union[str,Path]) -> FMUNamesResponse:
     """
-    List all FMU models in the given directory.
+    Lists all FMU model names in a directory.
+
+    Scans a specified directory for FMU files (with '.fmu' extension) and returns
+    their names without the file extension. This enables discovery of available
+    simulation models in a workspace or model library.
 
     Args:
-        fmu_folder (str): Path to the directory containing the FMU models.
-       
+        fmu_folder (Union[str, Path]):
+            Path to the directory containing FMU model files. Must be a valid
+            directory path, otherwise raises FileNotFoundError.
+
     Returns:
-        List[str]: List of model names (without the '.fmu' extension).
+        FMUNamesResponse:
+            Contains a list of FMU model names (file stems without '.fmu' extension)
+            found in the specified directory.
 
     Purpose:
-        Retrieve the names of all available FMU simulation models.
+        Enable discovery and enumeration of available FMU simulation models in a
+        workspace. Essential for building model selection interfaces and automated
+        workflows that need to iterate over available models.
+
+    Important:
+        - Directory must exist and be accessible, otherwise raises FileNotFoundError
+        - Only files with '.fmu' extension are included in results
+        - Returns file stems (names without extension), not full paths
+        - Empty list is returned if no FMU files are found in the directory
     """
     
     if not isinstance(fmu_folder, Path):
@@ -189,16 +205,39 @@ def get_fmu_names(fmu_folder: Union[str,Path]) -> FMUNamesResponse:
 
 def get_model_description(fmu_path: Union[str, Path]) -> ModelDescription:
     """
-    Get the model description of a specific FMU model.
+    Retrieves comprehensive model description from an FMU file.
+
+    Reads and parses an FMU model file to extract metadata, variable definitions
+    (inputs, outputs, parameters), default simulation options, and model information.
+    This provides complete structural information about the model for analysis and
+    simulation setup.
 
     Args:
-        fmu_path (str): Path to the FMU file. Must end with '.fmu'.
+        fmu_path (Union[str, Path]):
+            Path to the FMU file. Must end with '.fmu' extension and file must exist,
+            otherwise raises ValueError or FileNotFoundError.
 
     Returns:
-        ModelDescription: The FMU model description object.
+        ModelDescription:
+            Complete model description containing:
+            - model_name: Name of the FMU model
+            - model_description: Text description of the model
+            - variables: FMUVariables with lists of inputs, outputs, and parameters
+            - metadata: FMUMetadata with FMI version, author, license, etc.
+            - simulation: FMUSimulationOptions with default start/stop times, tolerance, step size
 
     Purpose:
-        Retrieve metadata, variables, and default options from the FMU model.
+        Extract complete structural and metadata information from FMU models to
+        enable automated simulation setup, parameter discovery, and model analysis.
+        Essential for understanding model capabilities and configuring simulations
+        without manual inspection of FMU files.
+
+    Important:
+        - FMU file must exist and have '.fmu' extension, otherwise raises FileNotFoundError or ValueError
+        - Uses FMPy's read_model_description to parse FMU XML metadata
+        - Variable values are converted to floats with safe fallbacks for missing data
+        - Default simulation options are extracted from FMU's defaultExperiment if available
+        - Returns empty strings for missing metadata fields
     """
     if not isinstance(fmu_path, Path):
         fmu_path = Path(fmu_path)

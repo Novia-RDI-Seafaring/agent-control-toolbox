@@ -228,6 +228,33 @@ def _get_inflection_point(t, x):
 def find_first_crossing(data: DataModel, props: FirstCrossingProps) -> AttributesGroup:
     """
     Finds the first crossing of a threshold in a signal.
+
+    Locates the first time point after a specified start index where a signal crosses
+    a given threshold value. Uses linear interpolation between samples to determine the
+    exact crossing point with sub-sample precision.
+
+    Args:
+        data (DataModel):
+            DataModel containing timestamps and signals to analyze.
+        props (FirstCrossingProps):
+            Properties specifying the signal name, threshold value, start index,
+            and crossing direction (upward or downward).
+
+    Returns:
+        AttributesGroup:
+            Contains a list of Point objects with timestamp and value at the first
+            threshold crossing. Returns NaN values if no crossing is found.
+
+    Purpose:
+        Identify critical time points in control system responses where signals
+        cross important thresholds, such as setpoints, safety limits, or reference
+        values. Essential for timing analysis and event detection in control loops.
+
+    Important:
+        - Signal must exist in the data model, otherwise raises ValueError
+        - Returns NaN timestamp and value if no crossing is found after start_index
+        - Upward crossing detects when signal becomes >= threshold
+        - Downward crossing detects when signal becomes <= threshold
     """
     points = []
 
@@ -259,6 +286,33 @@ def find_first_crossing(data: DataModel, props: FirstCrossingProps) -> Attribute
 def find_inflection_point(data: DataModel, props: InflectionPointProps) -> AttributesGroup:
     """
     Finds the inflection point of a signal.
+
+    Identifies the point of maximum rate of change (maximum slope) in a signal by
+    computing the derivative and locating its peak. For monotonic step responses,
+    this corresponds to the inflection point where the response curve transitions
+    from accelerating to decelerating.
+
+    Args:
+        data (DataModel):
+            DataModel containing timestamps and signals to analyze.
+        props (InflectionPointProps):
+            Properties specifying the signal name to analyze.
+
+    Returns:
+        AttributesGroup:
+            Contains InflectionPoint objects with timestamp, value, slope, and
+            description for each signal analyzed.
+
+    Purpose:
+        Critical for control system analysis, particularly in step response
+        characterization. The inflection point is used in identification methods
+        (e.g., tangent method) to estimate system parameters like time constants
+        and dead time in FOPDT models.
+
+    Important:
+        - Signal must exist in the data model, otherwise raises ValueError
+        - For non-monotonic signals, returns the point with maximum derivative
+        - The slope value represents the rate of change at the inflection point
     """
     points = []
 
@@ -295,17 +349,37 @@ def find_inflection_point(data: DataModel, props: InflectionPointProps) -> Attri
 def find_characteristic_points(data: DataModel) -> AttributesGroup:
     """
     Finds the characteristic points of step responses.
-    
+
+    Identifies key reference points on step response curves that are essential for
+    control system analysis and controller tuning. These points represent specific
+    percentages of the total step change and are used to compute performance metrics
+    like rise time, time constants, and settling behavior.
+
     Args:
-        data: DataModel containing the signal
-        
+        data (DataModel):
+            DataModel containing timestamps and signals from a step response.
+            Assumes signals represent step responses with initial and final values.
+
     Returns:
-        ResponseModel: Contains **critical points* analyzing step rsponses and finetuning controllers.
-            - p0 = (t0,y0) point when output starts to change from initial value.
-            - p10 = (t10,y10) point when output first reachest 10% of total change.
-            - p63 = (t63,y63) point when output first reachest 63% of total change. Can be used to determine the time constant T of a FOPDT system.
-            - p90 = (t90,y90) point when output first reachest 90% of total change.
-            - p98 = (t98,y98) point when output first reachest 98% of total change.
+        AttributesGroup:
+            Contains CharacteristicPoints objects for each signal, including:
+            - p0: Point when output first starts to change from initial value
+            - p10: Point when output first reaches 10% of total change (used for rise time)
+            - p63: Point when output first reaches 63% of total change (used to determine time constant T)
+            - p90: Point when output first reaches 90% of total change (used for rise time)
+            - pinf: Steady-state point as t approaches infinity
+
+    Purpose:
+        Extract standardized reference points from step responses for systematic
+        analysis of control system dynamics. These points enable calculation of
+        performance metrics, system identification, and controller tuning using
+        established methods like Ziegler-Nichols or lambda tuning.
+
+    Important:
+        - Assumes signals represent step responses with clear initial and final values
+        - Uses the last value in the signal as the steady-state (final) value
+        - Points are found using threshold crossing detection with interpolation
+        - The 63% point (p63) is particularly important for FOPDT model identification
     """
     # find the points where the signal changes
     timestamps = data.timestamps
@@ -366,8 +440,43 @@ def find_peaks(data: DataModel, props: FindPeaksProps) -> AttributesGroup:
     """
     Find peaks inside a signal based on peak properties.
 
-    This function takes DataModel and finds all local maxima by simple comparison of neighboring values.
-    Optionally, a subset of these peaks can be selected by specifying conditions for a peak's properties.
+    Detects local maxima in signals using scipy's peak detection algorithm with
+    configurable filtering criteria. Peaks can be filtered by height, threshold,
+    distance, prominence, width, and other properties to isolate significant
+    oscillations or periodic events in control system responses.
+
+    Args:
+        data (DataModel):
+            DataModel containing timestamps and signals to analyze for peaks.
+        props (FindPeaksProps):
+            Properties for peak detection including:
+            - height: Required minimum/maximum peak height
+            - threshold: Required vertical distance to neighboring samples
+            - distance: Minimum distance between peaks
+            - prominence: Required peak prominence above surrounding baseline
+            - width: Required peak width at specified relative height
+            - wlen: Window length for prominence/width calculation
+            - rel_height: Relative height for width calculation (default 0.5)
+            - plateau_size: Required size of flat top for plateau peaks
+
+    Returns:
+        AttributesGroup:
+            Contains PeakAttributes objects for each signal with:
+            - timestamps: List of peak time locations
+            - peak_values: List of peak amplitude values
+            - average_peak_period: Average time between consecutive peaks
+            - properties: Dictionary of additional peak properties (prominence, width, etc.)
+
+    Purpose:
+        Identify oscillatory behavior, periodic disturbances, or resonance frequencies
+        in control system responses. Essential for stability analysis, oscillation
+        detection, and frequency domain characterization of closed-loop systems.
+
+    Important:
+        - Uses scipy.signal.find_peaks for robust peak detection
+        - Average peak period is NaN if fewer than 2 peaks are found
+        - All filtering criteria are optional; if none specified, all local maxima are returned
+        - Peak properties dictionary contains numpy arrays converted to lists for serialization
     """
     t = np.asarray(data.timestamps, dtype=float)
 
@@ -412,9 +521,38 @@ def find_peaks(data: DataModel, props: FindPeaksProps) -> AttributesGroup:
 
 def find_settling_time(data: DataModel, props: SettlingTimeProps) -> AttributesGroup:
     """
-    Finds the settling time of each signal in the data. The settling time is defined as the
-    first time point where the signal remains within a specified tolerance (percentage) of
-    its final value (i.e., steady-state level) for the remainder of the signal.
+    Finds the settling time of each signal in the data.
+
+    Determines the time required for a signal to settle within a specified tolerance
+    band around its steady-state value. The settling time is defined as the first time
+    point where the signal enters the tolerance band and remains within it for all
+    subsequent time points until the end of the data.
+
+    Args:
+        data (DataModel):
+            DataModel containing timestamps and signals to analyze. Assumes signals
+            represent transient responses approaching steady-state values.
+        props (SettlingTimeProps):
+            Properties for settling time calculation:
+            - tolerance: Percentage tolerance band (default 0.02 = 2%) around steady-state value
+
+    Returns:
+        AttributesGroup:
+            Contains SettlingTime objects for each signal with:
+            - signal_name: Name of the analyzed signal
+            - settling_time: Time when signal enters and stays within tolerance band (NaN if never settles)
+
+    Purpose:
+        Quantify transient response performance by measuring how quickly a control system
+        reaches and maintains its steady-state value. Critical metric for evaluating
+        controller tuning and system response speed in control engineering.
+
+    Important:
+        - Raises ValueError if data contains no timestamps
+        - Uses the last value in each signal as the steady-state reference
+        - Tolerance band is symmetric: [steady_state * (1 - tol), steady_state * (1 + tol)]
+        - Returns NaN if signal never enters tolerance band or exits after entering
+        - Default tolerance of 2% is standard for many control applications
     """
     t = np.asarray(data.timestamps, dtype=float)
     if t.size == 0:
@@ -460,7 +598,35 @@ def find_settling_time(data: DataModel, props: SettlingTimeProps) -> AttributesG
 
 def find_rise_time(data: DataModel) -> AttributesGroup:
     """
-    Finds the rise time of a signal. The rise time is the time it takes for the signal to rise from 10% to 90% of its final value.
+    Finds the rise time of a signal.
+
+    Calculates the rise time as the duration between when a signal first reaches
+    10% and 90% of its total change from initial to final value. This is the
+    standard definition of rise time in control engineering for step responses.
+
+    Args:
+        data (DataModel):
+            DataModel containing timestamps and signals from a step response.
+            Assumes signals represent step responses with clear initial and final values.
+
+    Returns:
+        AttributesGroup:
+            Contains RiseTime objects for each signal with:
+            - signal_name: Name of the analyzed signal
+            - rise_time: Time difference between 10% and 90% crossing points
+            - description: Human-readable description of the rise time calculation
+
+    Purpose:
+        Measure the speed of response for control systems by quantifying how quickly
+        a signal transitions from its initial state to near steady-state. Rise time
+        is a fundamental performance metric used in controller design and tuning.
+
+    Important:
+        - Assumes signals represent step responses with clear initial and final values
+        - Uses the last value in each signal as the final (steady-state) value
+        - Rise time is computed as t90 - t10 where t10 and t90 are threshold crossings
+        - Returns NaN if either 10% or 90% threshold crossing cannot be found
+        - Standard definition uses 10%-90% range, though other ranges (e.g., 0%-100%) exist
     """
     rise_times = []
     for signal in data.signals:
@@ -487,7 +653,37 @@ def find_rise_time(data: DataModel) -> AttributesGroup:
 
 def find_overshoot(data: DataModel) -> AttributesGroup:
     """
-    Finds the maximum over- or undershoot of signal. The overshoot is the maximum deviation from the steady-state value after 90% of the change is reached.
+    Finds the maximum overshoot of a signal.
+
+    Calculates the maximum deviation from the steady-state value that occurs after
+    the signal has reached 90% of its total change. Overshoot represents the extent
+    to which a control system response exceeds its final value before settling.
+
+    Args:
+        data (DataModel):
+            DataModel containing timestamps and signals from a step response.
+            Assumes signals represent step responses with clear initial and final values.
+
+    Returns:
+        AttributesGroup:
+            Contains Overshoot objects for each signal with:
+            - signal_name: Name of the analyzed signal
+            - max_value: Maximum value reached after the 90% crossing point
+            - percent: Percentage overshoot relative to steady-state value
+            - description: Human-readable description of the overshoot calculation
+
+    Purpose:
+        Evaluate control system stability and damping by measuring how much a response
+        exceeds its target value. Overshoot is a critical performance metric that
+        indicates whether a controller is properly tuned to avoid excessive oscillation
+        or instability in closed-loop systems.
+
+    Important:
+        - Assumes signals represent step responses with clear initial and final values
+        - Only considers values after the 90% threshold crossing point
+        - Overshoot is calculated as (max_value - steady_state) / steady_state * 100
+        - Returns 0.0 if no overshoot occurs (signal never exceeds steady-state)
+        - Negative overshoot (undershoot) is possible but not separately reported
     """
     overshoots = []
     t = np.asarray(data.timestamps, dtype=float)

@@ -81,34 +81,38 @@ class ImpulseProps(BaseModel):
 
 def generate_step(step: StepProps) -> DataModel:
     """
-    Generates a step signal at time = 0.0 + sampling_time.
-    
+    Generates a step signal with specified timing and amplitude.
+
+    Creates a DataModel containing a step signal that transitions from an initial
+    value to a final value at a specific time point. The signal is defined only
+    at critical timestamps (start, step time, and end) to minimize data size
+    while maintaining correct behavior in simulations.
+
     Args:
-        step: StepProps containing the step signal properties
-        
+        step (StepProps):
+            Step signal properties including:
+            - signal_name: Name of the signal (default "input")
+            - time_range: TimeRange with start, stop, and sampling_time
+            - initial_value: Value before step transition (default 0.0)
+            - final_value: Value after step transition (default 1.0)
+
     Returns:
-        DataModel: Step signal
+        DataModel:
+            Step signal containing timestamps and a single signal. The signal
+            maintains initial_value until time_range.start + sampling_time,
+            then transitions to final_value and remains constant until stop time.
 
-    Usage: 
-    - Make sure that the step signal is generated with the correct signal name when passed to other tools as input.
-    - Make sure the lists of timestamps and values are the same length
-    - Make sure the timestamps are in ascending order
-    - Keep the timestamp and value lists as short as possible. It is enough to define the singal only at timestamps where change happens.
+    Purpose:
+        Generate standardized step input signals for control system testing and
+        simulation. Step signals are fundamental test inputs used to characterize
+        system dynamics, generate step responses, and evaluate controller performance.
 
-    Example: Generate a step at t=1 seconds on the time interval [0, 10.0] seconds.
-    ```json
-    {
-        "signal_name": "input",
-        "time_range": {
-            "start": 0.0,
-            "stop": 10.0,
-            "sampling_time": 0.1
-        },
-        "initial_value": 0.0,
-        "final_value": 1.0
-    }
-    ```
-
+    Important:
+        - Step transition occurs at time = time_range.start + time_range.sampling_time
+        - Signal is defined only at three points: start, step time, and stop (minimal representation)
+        - Signal name must match input variable name in FMU models when used for simulation
+        - Timestamps are in ascending order and values list matches timestamps length
+        - The minimal representation is sufficient for FMU simulation as it defines signal only where changes occur
     """
     t_start = step.time_range.start
     t_stop = step.time_range.stop
